@@ -1,7 +1,7 @@
 # RideWise Assist 🛴💨
 
 > **NeoStats AI Engineer Intern Hackathon Project**  
-> A full-stack, enterprise-ready conversational AI assistant built for RideWise Mobility. It brings together operational SQLite database records and messy PDF policy docs into one clean, reliable assistant—complete with strict customer privacy (RBAC), automatic policy versioning (v1 vs. v2), zero-token instant shortcuts, and an interactive frontend.
+> A full-stack, enterprise-ready conversational AI assistant built for RideWise Mobility. It brings together operational SQLite database records and messy PDF policy docs into one clean, reliable assistant—complete with strict customer privacy (RBAC), automatic policy versioning (v1 vs. v2), dynamic runtime semantic caching, and an interactive frontend.
 
 Built with Python, FastAPI, LangGraph, Azure OpenAI (`gpt-oss-120b`), and a custom GSAP web interface.
 
@@ -43,7 +43,7 @@ Here is how a user query travels through the system:
 |                                                                                                         |
 |  +--------------------+   +--------------------+   +---------------------+   +-----------------------+  |
 |  |   1. Router Node   |-->| 2. RBAC Guard Node |-->| 3. DB Execution Node|-->|  4. Hybrid RAG Engine  |  |
-|  | (Fast Shortcut /   |   | (Customer Isolation|   | (Safe Parameterized |   | (BM25 + Semantic      |  |
+|  | (Intent & Dynamic  |   | (Customer Isolation|   | (Safe Parameterized |   | (BM25 + Semantic      |  |
 |  |  Semantic Cache)   |   |  & Staff Checks)   |   |  Read-Only SQL)     |   |  + Temporal Filter)   |  |
 |  +--------------------+   +--------------------+   +---------------------+   +-----------+-----------+  |
 |                                                                                          |              |
@@ -89,9 +89,9 @@ We transcribed and grounded both into structured knowledge chunks so the assista
 - **Sublinear TF-IDF Semantic Search** captures colloquial phrasing and conversational intent.
 - **RRF** blends both rankings cleanly without needing hand-tuned similarity thresholds.
 
-### 5. Multi-Tier Caching & Rate-Limit Shield
-- **Zero-Token Deterministic Shortcuts:** Repetitive requests like *"Show my profile"* or *"List my rides"* resolve in `< 1ms` directly from SQLite—spending zero LLM tokens.
-- **Semantic FAQ Cache:** Frequently asked policy questions (e.g., *"What is the security deposit for an Activa?"*) match existing verified answers via cosine similarity ($> 0.92$), cutting latency down to ~2ms.
+### 5. Dynamic Runtime Caching & Rate-Limit Shield
+- **100% LLM Grounded Answers:** All user queries (greetings, profile details, booking status, and policy questions) are dynamically synthesized by the Azure OpenAI LLM grounded in live SQLite records and retrieved policy chunks. Zero answers are hardcoded.
+- **Dynamic Semantic FAQ Cache:** When general policy questions are answered, they are dynamically indexed into an in-memory TF-IDF cosine similarity cache ($\ge 0.95$). Subsequent identical or semantically equivalent questions resolve from the dynamic cache in ~2ms.
 - **Tenacity Exponential Backoff:** Gracefully handles Azure OpenAI `429 Too Many Requests` spikes with jittered retries so conversations never crash mid-sentence.
 
 ### 6. Interactive Frontend with GSAP Motion
@@ -193,7 +193,7 @@ Here are a few quick scenarios you can test right away in the UI:
 │   │   ├── knowledge_base.py     # Transcribed policy corpus & scanned annexures
 │   │   └── hybrid_retriever.py   # BM25 + Sublinear TF-IDF + RRF + Date-based filter
 │   ├── cache/
-│   │   └── semantic_cache.py     # Fast-path shortcut router & cosine similarity cache
+│   │   └── semantic_cache.py     # Dynamic runtime semantic cache (starts empty, caches LLM output)
 │   ├── llm/
 │   │   └── client.py             # Azure OpenAI client with Tenacity backoff retries
 │   ├── graph/
