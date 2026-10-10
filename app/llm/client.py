@@ -18,11 +18,24 @@ class LLMClient:
         self.api_key = settings.AZURE_OPENAI_API_KEY
         self.deployment_name = settings.AZURE_OPENAI_DEPLOYMENT_NAME
         self.model_name = settings.AZURE_OPENAI_MODEL_NAME
-        
-        self.client = OpenAI(
-            base_url=self.endpoint,
-            api_key=self.api_key
-        )
+        self._client: Optional[OpenAI] = None
+
+    @property
+    def client(self) -> OpenAI:
+        if self._client is None:
+            # Re-fetch from settings in case secrets were populated after module import
+            endpoint = settings.AZURE_OPENAI_ENDPOINT or "https://your-resource-name.services.ai.azure.com/openai/v1/"
+            api_key = settings.AZURE_OPENAI_API_KEY
+            if not api_key:
+                raise ValueError(
+                    "Missing Azure OpenAI credentials. Please configure AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT in Streamlit Secrets or your .env file."
+                )
+            self._client = OpenAI(
+                base_url=endpoint,
+                api_key=api_key
+            )
+        return self._client
+
 
     @retry(
         wait=wait_exponential(multiplier=1, min=2, max=8),
