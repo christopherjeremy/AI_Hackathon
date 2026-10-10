@@ -1,18 +1,12 @@
 /**
- * RideWise Assist - Frontend Application Logic
- * Powered by GSAP (GreenSock Animation Platform) for high-end UI/UX motion
+ * RideWise Assist - Bright Cockpit Dashboard
+ * Powered by GSAP Core for Enterprise Motion Design
  */
 
-// Global State
 let currentSession = null;
-let currentRole = "customer"; // 'customer' or 'support_agent'
+let currentRole = "customer";
 
-// API Base URL (defaults to relative if served via http/https, falls back to localhost:8000 if opened directly)
-const API_BASE = (window.location.protocol === "http:" || window.location.protocol === "https:")
-  ? ""
-  : "http://127.0.0.1:8000";
-
-// Pre-defined quick prompts by role
+// Predefined Quick Inquiries
 const CUSTOMER_PROMPTS = [
   "Show my latest bookings and statuses",
   "Why is there a late fee on booking B-0001?",
@@ -28,7 +22,7 @@ const STAFF_PROMPTS = [
   "Show fleet availability at Indiranagar hub",
   "Explain the difference between Cancellation Policy v1 and v2",
   "Details and payment breakdown for booking B-0004",
-  "Show open dispute claims"
+  "Lookup customer profile for CUST0001"
 ];
 
 // DOM Elements
@@ -42,46 +36,46 @@ const customerIdInput = document.getElementById("customerIdInput");
 const staffNameInput = document.getElementById("staffNameInput");
 const loginError = document.getElementById("loginError");
 
-const profileName = document.getElementById("profileName");
-const profileRole = document.getElementById("profileRole");
-const profileTierPill = document.getElementById("profileTierPill");
-const profileAvatar = document.getElementById("profileAvatar");
-const quickPromptsList = document.getElementById("quickPromptsList");
+const headerUserName = document.getElementById("headerUserName");
+const headerTierBadge = document.getElementById("headerTierBadge");
+const headerAvatar = document.getElementById("headerAvatar");
+const railEntitlementText = document.getElementById("railEntitlementText");
+const quickInquiriesList = document.getElementById("quickInquiriesList");
 const chatMessages = document.getElementById("chatMessages");
 const messageInput = document.getElementById("messageInput");
 const typingIndicator = document.getElementById("typingIndicator");
 
 // =========================================================
-// GSAP INITIALIZATION & AMBIENT ANIMATIONS
+// GSAP INITIALIZATION
 // =========================================================
 window.addEventListener("DOMContentLoaded", () => {
-  initAmbientAnimations();
+  initAmbientMeshMotion();
   initAuthModalEntrance();
 });
 
-function initAmbientAnimations() {
-  // Floating glow orbs with smooth infinite yoyo
-  gsap.to(".glow-1", {
-    x: "+=60",
-    y: "+=40",
+function initAmbientMeshMotion() {
+  // Gentle ambient floating mesh orbs
+  gsap.to(".mesh-1", {
+    x: "+=50",
+    y: "+=30",
+    duration: 9,
+    repeat: -1,
+    yoyo: true,
+    ease: "sine.inOut"
+  });
+
+  gsap.to(".mesh-2", {
+    x: "-=40",
+    y: "-=25",
+    duration: 11,
+    repeat: -1,
+    yoyo: true,
+    ease: "sine.inOut"
+  });
+
+  gsap.to(".mesh-3", {
+    scale: 1.15,
     duration: 8,
-    repeat: -1,
-    yoyo: true,
-    ease: "sine.inOut"
-  });
-
-  gsap.to(".glow-2", {
-    x: "-=50",
-    y: "-=30",
-    duration: 10,
-    repeat: -1,
-    yoyo: true,
-    ease: "sine.inOut"
-  });
-
-  gsap.to(".glow-3", {
-    scale: 1.2,
-    duration: 7,
     repeat: -1,
     yoyo: true,
     ease: "sine.inOut"
@@ -90,26 +84,26 @@ function initAmbientAnimations() {
 
 function initAuthModalEntrance() {
   const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
-  tl.from(".auth-modal", {
-    scale: 0.88,
+  tl.from(".auth-card", {
+    scale: 0.9,
     autoAlpha: 0,
-    y: 30,
-    duration: 0.65
+    y: 25,
+    duration: 0.6
   })
-  .from(".brand-badge", { y: -10, autoAlpha: 0, duration: 0.3 }, "-=0.3")
-  .from([".brand-title", ".brand-subtitle"], { y: 15, autoAlpha: 0, stagger: 0.1, duration: 0.4 }, "-=0.2")
-  .from(".role-selector", { scale: 0.95, autoAlpha: 0, duration: 0.3 }, "-=0.2")
-  .from(".login-form-pane", { y: 15, autoAlpha: 0, duration: 0.35 }, "-=0.15");
+  .from(".auth-badge", { y: -8, autoAlpha: 0, duration: 0.3 }, "-=0.25")
+  .from([".auth-tagline", ".auth-title", ".auth-desc"], { y: 12, autoAlpha: 0, stagger: 0.08, duration: 0.4 }, "-=0.2")
+  .from(".role-tabs", { scale: 0.96, autoAlpha: 0, duration: 0.3 }, "-=0.2")
+  .from(".login-pane", { y: 10, autoAlpha: 0, duration: 0.3 }, "-=0.15");
 }
 
 // =========================================================
-// ROLE SWITCHING (GSAP Morph/Fade)
+// ROLE SWITCHING (GSAP Morph)
 // =========================================================
 function switchLoginRole(role) {
   if (role === currentRole) return;
   currentRole = role;
 
-  const tl = gsap.timeline({ defaults: { duration: 0.25, ease: "power2.out" } });
+  const tl = gsap.timeline({ defaults: { duration: 0.22, ease: "power2.out" } });
 
   if (role === "customer") {
     tabCustomer.classList.add("active");
@@ -117,31 +111,60 @@ function switchLoginRole(role) {
 
     tl.to(staffLoginForm, {
       autoAlpha: 0,
-      y: -10,
+      y: -8,
       onComplete: () => {
         staffLoginForm.classList.add("hidden");
         customerLoginForm.classList.remove("hidden");
       }
     })
-    .fromTo(customerLoginForm, { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0 });
+    .fromTo(customerLoginForm, { autoAlpha: 0, y: 8 }, { autoAlpha: 1, y: 0 });
   } else {
     tabStaff.classList.add("active");
     tabCustomer.classList.remove("active");
 
     tl.to(customerLoginForm, {
       autoAlpha: 0,
-      y: -10,
+      y: -8,
       onComplete: () => {
         customerLoginForm.classList.add("hidden");
         staffLoginForm.classList.remove("hidden");
       }
     })
-    .fromTo(staffLoginForm, { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0 });
+    .fromTo(staffLoginForm, { autoAlpha: 0, y: 8 }, { autoAlpha: 1, y: 0 });
   }
 }
 
 // =========================================================
-// AUTHENTICATION LOGIC
+// KNOWLEDGE RAIL TABS SWITCHER
+// =========================================================
+function switchKnowledgeTab(tabName) {
+  const tabs = document.querySelectorAll(".k-tab-btn");
+  tabs.forEach(t => t.classList.remove("active"));
+
+  document.getElementById("tabContentActions").classList.add("hidden");
+  document.getElementById("tabContentHubs").classList.add("hidden");
+  document.getElementById("tabContentPolicy").classList.add("hidden");
+
+  if (tabName === "actions") {
+    tabs[0].classList.add("active");
+    const el = document.getElementById("tabContentActions");
+    el.classList.remove("hidden");
+    gsap.from(el, { autoAlpha: 0, y: 6, duration: 0.25 });
+  } else if (tabName === "hubs") {
+    tabs[1].classList.add("active");
+    const el = document.getElementById("tabContentHubs");
+    el.classList.remove("hidden");
+    gsap.from(el, { autoAlpha: 0, y: 6, duration: 0.25 });
+  } else if (tabName === "policy") {
+    tabs[2].classList.add("active");
+    const el = document.getElementById("tabContentPolicy");
+    el.classList.remove("hidden");
+    gsap.from(el, { autoAlpha: 0, y: 6, duration: 0.25 });
+  }
+}
+
+// =========================================================
+// AUTHENTICATION HANDLERS
 // =========================================================
 async function handleCustomerLogin() {
   const cid = customerIdInput.value.trim().toUpperCase();
@@ -164,7 +187,7 @@ async function handleStaffLogin() {
 function showLoginError(msg) {
   loginError.textContent = msg;
   loginError.classList.remove("hidden");
-  gsap.fromTo(loginError, { x: -10 }, { x: 0, duration: 0.4, ease: "elastic.out(1, 0.3)" });
+  gsap.fromTo(loginError, { x: -8 }, { x: 0, duration: 0.35, ease: "elastic.out(1, 0.3)" });
 }
 
 async function performLogin(payload) {
@@ -174,7 +197,7 @@ async function performLogin(payload) {
   btn.style.opacity = "0.7";
 
   try {
-    const res = await fetch(`${API_BASE}/api/auth/login`, {
+    const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -189,87 +212,70 @@ async function performLogin(payload) {
     }
 
     currentSession = data;
-    transitionToChatScreen();
+    transitionToCockpit();
   } catch (err) {
-    showLoginError("Network connection error. Is backend server running?");
+    showLoginError("Could not reach backend API. Is server running?");
     btn.style.pointerEvents = "auto";
     btn.style.opacity = "1";
   }
 }
 
 // =========================================================
-// TRANSITION TO CHAT SCREEN (GSAP)
+// TRANSITION TO COCKPIT (GSAP DUAL-PANE REVEAL)
 // =========================================================
-function transitionToChatScreen() {
+function transitionToCockpit() {
   const tl = gsap.timeline();
 
-  // Reset login buttons
-  const btnCust = document.getElementById("btnLoginCustomer");
-  const btnStaff = document.getElementById("btnLoginStaff");
-  if (btnCust) { btnCust.style.pointerEvents = "auto"; btnCust.style.opacity = "1"; }
-  if (btnStaff) { btnStaff.style.pointerEvents = "auto"; btnStaff.style.opacity = "1"; }
-
-  // Exit auth modal with fade
   tl.to(authScreen, {
     autoAlpha: 0,
     duration: 0.35,
     ease: "power2.in",
     onComplete: () => {
       authScreen.classList.add("hidden");
-      gsap.set(authScreen, { clearProps: "all" });
-
-      // Unhide chat screen and make sure its visibility/opacity are reset to 1
       mainChatScreen.classList.remove("hidden");
-      gsap.set(mainChatScreen, { autoAlpha: 1, clearProps: "opacity,visibility" });
-
-      populateUserProfile();
-      renderQuickPrompts();
+      populateHeaderUser();
+      populateQuickInquiries();
       addAssistantMessage(currentSession.welcome_message, ["System Authenticator"]);
     }
   })
-  // Enter Chat elements staggered
-  .fromTo(".sidebar", { x: -40, autoAlpha: 0 }, { x: 0, autoAlpha: 1, duration: 0.4, ease: "power3.out" })
-  .fromTo(".chat-header", { y: -20, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.3 }, "-=0.2")
-  .fromTo(".chat-input-bar", { y: 20, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.3 }, "-=0.2");
+  .fromTo(".cockpit-header", { y: -25, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.4, ease: "power3.out" })
+  .fromTo(".intelligence-rail", { x: -30, autoAlpha: 0 }, { x: 0, autoAlpha: 1, duration: 0.45, ease: "power3.out" }, "-=0.25")
+  .fromTo(".chat-workspace", { scale: 0.98, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.45, ease: "power3.out" }, "-=0.35");
 }
 
-function populateUserProfile() {
-  profileName.textContent = currentSession.display_name;
-  
+function populateHeaderUser() {
+  headerUserName.textContent = currentSession.display_name;
+
   if (currentSession.role === "customer") {
-    profileRole.textContent = `ID: ${currentSession.user_identifier}`;
-    profileAvatar.textContent = "👤";
+    headerAvatar.textContent = "👤";
     const tier = (currentSession.customer_profile?.customer_tier || "STANDARD").toUpperCase();
-    profileTierPill.textContent = tier;
-    profileTierPill.className = `tier-pill ${tier.toLowerCase()}`;
-    document.getElementById("entitlementDesc").textContent = `Scoped to ${currentSession.display_name}'s bookings`;
+    headerTierBadge.textContent = tier;
+    headerTierBadge.className = `tier-badge ${tier.toLowerCase()}`;
+    railEntitlementText.textContent = `Scoped to ${currentSession.display_name}'s bookings`;
+    document.getElementById("piiRow").classList.add("hidden");
   } else {
-    profileRole.textContent = "Support Operations";
-    profileAvatar.textContent = "🎧";
-    profileTierPill.textContent = "OPS DESK";
-    profileTierPill.className = "tier-pill silver";
-    document.getElementById("entitlementDesc").textContent = "Global fleet & cross-customer query scope";
+    headerAvatar.textContent = "🎧";
+    headerTierBadge.textContent = "OPS AGENT";
+    headerTierBadge.className = "tier-badge silver";
+    railEntitlementText.textContent = "Global fleet & cross-customer query scope";
+    document.getElementById("piiRow").classList.remove("hidden");
   }
 }
 
-function renderQuickPrompts() {
-  quickPromptsList.innerHTML = "";
+function populateQuickInquiries() {
+  quickInquiriesList.innerHTML = "";
   const prompts = currentSession.role === "customer" ? CUSTOMER_PROMPTS : STAFF_PROMPTS;
 
-  prompts.forEach((promptText, i) => {
-    const btn = document.createElement("button");
-    btn.className = "prompt-pill";
-    btn.textContent = promptText;
-    btn.onclick = () => {
-      messageInput.value = promptText;
-      handleSendMessage();
-    };
-    quickPromptsList.appendChild(btn);
+  prompts.forEach((promptText) => {
+    const card = document.createElement("div");
+    card.className = "inquiry-card";
+    card.textContent = promptText;
+    card.onclick = () => sendQuickMessage(promptText);
+    quickInquiriesList.appendChild(card);
   });
 
-  // Staggered entry animation for quick prompt pills
-  gsap.from(".prompt-pill", {
-    x: -15,
+  gsap.from(".inquiry-card", {
+    x: -12,
     autoAlpha: 0,
     duration: 0.3,
     stagger: 0.05,
@@ -277,8 +283,13 @@ function renderQuickPrompts() {
   });
 }
 
+function sendQuickMessage(text) {
+  messageInput.value = text;
+  handleSendMessage();
+}
+
 // =========================================================
-// CHAT MESSAGING & GSAP BUBBLE REVEALS
+// CHAT MESSAGING & ANIMATIONS
 // =========================================================
 async function handleSendMessage() {
   const text = messageInput.value.trim();
@@ -289,7 +300,7 @@ async function handleSendMessage() {
   showTyping(true);
 
   try {
-    const res = await fetch(`${API_BASE}/api/chat`, {
+    const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -321,50 +332,50 @@ function handleKeyDown(e) {
 
 function addUserMessage(text) {
   const row = document.createElement("div");
-  row.className = "message-row user";
+  row.className = "msg-row user";
   row.innerHTML = `
-    <div class="msg-avatar">${currentSession.role === "customer" ? "👤" : "🎧"}</div>
-    <div class="msg-bubble-wrapper">
-      <div class="msg-bubble">${escapeHtml(text)}</div>
+    <div class="avatar-badge">${currentSession.role === "customer" ? "👤" : "🎧"}</div>
+    <div class="bubble-wrap">
+      <div class="bubble-content">${escapeHtml(text)}</div>
     </div>
   `;
   chatMessages.appendChild(row);
   scrollToBottom();
 
   gsap.from(row, {
-    y: 15,
+    y: 12,
     autoAlpha: 0,
-    scale: 0.96,
-    duration: 0.35,
+    scale: 0.97,
+    duration: 0.3,
     ease: "power2.out"
   });
 }
 
 function addAssistantMessage(markdownText, citations = [], cacheStatus = null) {
   const row = document.createElement("div");
-  row.className = "message-row assistant";
-  
+  row.className = "msg-row assistant";
+
   const parsedHtml = marked.parse(markdownText);
   let citationDrawerHtml = "";
 
   if (citations && citations.length > 0) {
-    const pills = citations.map(c => `<span class="cite-pill">${escapeHtml(c)}</span>`).join("");
-    const cacheBadge = cacheStatus ? `<span class="cite-pill" style="border-color:#38bdf8;color:#38bdf8;">⚡ ${cacheStatus}</span>` : "";
+    const pills = citations.map(c => `<span class="cite-tag">${escapeHtml(c)}</span>`).join("");
+    const cacheBadge = cacheStatus ? `<span class="cite-tag" style="background:#e0f2fe;color:#0284c7;font-weight:700;">⚡ ${cacheStatus}</span>` : "";
     citationDrawerHtml = `
-      <div class="citation-drawer">
-        <div class="citation-header">
-          <span>📚 Verified Citations & Ledger Records</span>
+      <div class="citation-box">
+        <div class="citation-title">
+          <span>📚 Verified Ledger Records &amp; Policy Citations</span>
           <span>▼</span>
         </div>
-        <div class="citation-pills">${cacheBadge}${pills}</div>
+        <div class="citation-list">${cacheBadge}${pills}</div>
       </div>
     `;
   }
 
   row.innerHTML = `
-    <div class="msg-avatar">⚡</div>
-    <div class="msg-bubble-wrapper">
-      <div class="msg-bubble">${parsedHtml}</div>
+    <div class="avatar-badge">▲</div>
+    <div class="bubble-wrap">
+      <div class="bubble-content">${parsedHtml}</div>
       ${citationDrawerHtml}
     </div>
   `;
@@ -372,12 +383,11 @@ function addAssistantMessage(markdownText, citations = [], cacheStatus = null) {
   chatMessages.appendChild(row);
   scrollToBottom();
 
-  // GSAP animation for AI response reveal
   gsap.from(row, {
-    y: 20,
+    y: 16,
     autoAlpha: 0,
-    scale: 0.97,
-    duration: 0.45,
+    scale: 0.98,
+    duration: 0.4,
     ease: "power2.out"
   });
 }
@@ -385,10 +395,9 @@ function addAssistantMessage(markdownText, citations = [], cacheStatus = null) {
 function showTyping(show) {
   if (show) {
     typingIndicator.classList.remove("hidden");
-    // GSAP bouncing dots stagger
     gsap.to(".typing-dot", {
-      y: -6,
-      duration: 0.35,
+      y: -5,
+      duration: 0.32,
       stagger: 0.12,
       repeat: -1,
       yoyo: true,
@@ -415,27 +424,24 @@ function escapeHtml(text) {
 // =========================================================
 async function handleResetConversation() {
   if (!currentSession) return;
-  
-  // Quick spin animation on reset button icon
-  gsap.to(".reset-icon", { rotation: "+=360", duration: 0.5, ease: "power2.out" });
+  gsap.to(".btn-reset-chat svg", { rotation: "+=360", duration: 0.5, ease: "power2.out" });
 
   try {
-    await fetch(`${API_BASE}/api/chat/reset`, {
+    await fetch("/api/chat/reset", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ session_id: currentSession.session_id })
     });
-    
-    // Animate out old messages and clear
-    gsap.to(".message-row", {
+
+    gsap.to(".msg-row", {
       autoAlpha: 0,
-      y: -10,
-      stagger: 0.05,
-      duration: 0.25,
+      y: -8,
+      stagger: 0.04,
+      duration: 0.22,
       onComplete: () => {
         chatMessages.innerHTML = "";
         addAssistantMessage(
-          `Conversation context refreshed. Hello **${currentSession.display_name}**, how can I assist you?`,
+          `Conversation context refreshed. Hello **${currentSession.display_name}**, how can I assist you today?`,
           ["System Reset"]
         );
       }
@@ -450,27 +456,11 @@ function handleLogout() {
   tl.to(mainChatScreen, {
     autoAlpha: 0,
     duration: 0.25,
-    ease: "power2.in",
     onComplete: () => {
       mainChatScreen.classList.add("hidden");
-      // Clear inline style overrides set by GSAP animations
-      gsap.set(mainChatScreen, { clearProps: "all" });
-      gsap.set([".sidebar", ".chat-header", ".chat-input-bar", ".prompt-pill"], { clearProps: "all" });
-
       authScreen.classList.remove("hidden");
-      gsap.fromTo(authScreen, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3, ease: "power2.out" });
-
-      // Reset login form fields and errors
-      loginError.classList.add("hidden");
-      loginError.textContent = "";
-
-      const btnCust = document.getElementById("btnLoginCustomer");
-      const btnStaff = document.getElementById("btnLoginStaff");
-      if (btnCust) { btnCust.style.pointerEvents = "auto"; btnCust.style.opacity = "1"; }
-      if (btnStaff) { btnStaff.style.pointerEvents = "auto"; btnStaff.style.opacity = "1"; }
-
+      gsap.to(authScreen, { autoAlpha: 1, duration: 0.25 });
       chatMessages.innerHTML = "";
-      messageInput.value = "";
       currentSession = null;
     }
   });

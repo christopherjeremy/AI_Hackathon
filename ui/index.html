@@ -3,202 +3,268 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NeoStats | RideWise Assist — Win with Intelligence</title>
+  <title>NeoStats | RideWise Assist — Enterprise Intelligence Cockpit</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/style.css">
-  <!-- GSAP Core & Plugins from CDN -->
+  <!-- GSAP Core from CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-  <!-- Marked.js for clean markdown rendering -->
+  <!-- Marked.js for markdown rendering -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
-<body>
-  <!-- Ambient background glow elements animated with GSAP -->
-  <div class="ambient-glow glow-1"></div>
-  <div class="ambient-glow glow-2"></div>
-  <div class="ambient-glow glow-3"></div>
+<body class="bright-theme">
+  <!-- Dynamic subtle bright ambient meshes animated via GSAP -->
+  <div class="mesh-gradient mesh-1"></div>
+  <div class="mesh-gradient mesh-2"></div>
+  <div class="mesh-gradient mesh-3"></div>
 
-  <!-- App Container -->
-  <div class="app-wrapper">
-
-    <!-- LOGIN / AUTH SCREEN -->
-    <div id="authScreen" class="auth-screen">
-      <div class="auth-modal">
-        <div class="brand-badge">
-          <span class="pulse-dot"></span>
-          <span>NeoStats AI Solution • Enterprise Mobility</span>
-        </div>
-        <div class="brand-tagline">Win with Intelligence</div>
-        <h1 class="brand-title">RideWise <span class="gradient-text">Assist</span></h1>
-        <p class="brand-subtitle">Enterprise Conversational AI for RideWise Mobility, powered by NeoStats AI Engineering (gpt-oss-120b, LangGraph & Hybrid RAG).</p>
-
-        <!-- Role Toggle Tabs -->
-        <div class="role-selector">
-          <button id="tabCustomer" class="role-tab active" onclick="switchLoginRole('customer')">
-            <span class="tab-icon">👤</span> Customer Self-Service
-          </button>
-          <button id="tabStaff" class="role-tab" onclick="switchLoginRole('support_agent')">
-            <span class="tab-icon">🎧</span> Support Desk Staff
-          </button>
-        </div>
-
-        <!-- Customer Login Form -->
-        <div id="customerLoginForm" class="login-form-pane">
-          <div class="input-group">
-            <label for="customerIdInput">Enter Your Customer ID</label>
-            <div class="input-wrapper">
-              <span class="input-prefix">ID</span>
-              <input type="text" id="customerIdInput" placeholder="e.g. CUST0001" value="CUST0001" autocomplete="off">
-            </div>
-            <p class="field-hint">Try <code>CUST0001</code> (Gold), <code>CUST0002</code> (Silver), or <code>CUST0003</code> (Standard)</p>
-          </div>
-          <button id="btnLoginCustomer" class="btn-primary" onclick="handleCustomerLogin()">
-            <span>Enter Customer Portal</span>
-            <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-          </button>
-        </div>
-
-        <!-- Support Staff Login Form -->
-        <div id="staffLoginForm" class="login-form-pane hidden">
-          <div class="input-group">
-            <label for="staffNameInput">Support Staff / Operator Name</label>
-            <div class="input-wrapper">
-              <span class="input-prefix">OP</span>
-              <input type="text" id="staffNameInput" placeholder="e.g. Ananya Rao" value="Ananya Rao" autocomplete="off">
-            </div>
-            <p class="field-hint">Access operational fleet status, damage disputes, and cross-customer query resolution (PII Protected).</p>
-          </div>
-          <button id="btnLoginStaff" class="btn-primary staff-btn" onclick="handleStaffLogin()">
-            <span>Enter Operational Console</span>
-            <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-          </button>
-        </div>
-
-        <div id="loginError" class="login-error hidden"></div>
+  <!-- AUTH SCREEN (BRIGHT MODAL) -->
+  <div id="authScreen" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-badge">
+        <span class="status-dot"></span>
+        <span>NeoStats AI Solution • Enterprise Mobility</span>
       </div>
+      <div class="auth-tagline">Win with Intelligence</div>
+      <h1 class="auth-title">RideWise <span class="gradient-text">Assist</span></h1>
+      <p class="auth-desc">Grounded conversational assistant for two-wheeler & EV fleet management, policy arbitration, and customer care.</p>
+
+      <!-- Role Tabs -->
+      <div class="role-tabs">
+        <button id="tabCustomer" class="role-tab-btn active" onclick="switchLoginRole('customer')">
+          <span class="icon">👤</span> Customer Self-Service
+        </button>
+        <button id="tabStaff" class="role-tab-btn" onclick="switchLoginRole('support_agent')">
+          <span class="icon">🎧</span> Support Desk Agent
+        </button>
+      </div>
+
+      <!-- Customer Login Form -->
+      <div id="customerLoginForm" class="login-pane">
+        <label class="field-label">Customer ID</label>
+        <div class="input-box">
+          <span class="input-tag">ID</span>
+          <input type="text" id="customerIdInput" value="CUST0001" placeholder="e.g. CUST0001" autocomplete="off">
+        </div>
+        <p class="hint">Sample IDs: <code>CUST0001</code> (Gold), <code>CUST0002</code> (Silver), <code>CUST0003</code> (Standard)</p>
+        <button id="btnLoginCustomer" class="btn-launch" onclick="handleCustomerLogin()">
+          <span>Authenticate & Open Portal</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </button>
+      </div>
+
+      <!-- Staff Login Form -->
+      <div id="staffLoginForm" class="login-pane hidden">
+        <label class="field-label">Staff Operator Name</label>
+        <div class="input-box">
+          <span class="input-tag staff-tag">STAFF</span>
+          <input type="text" id="staffNameInput" value="Ananya Rao" placeholder="e.g. Ananya Rao" autocomplete="off">
+        </div>
+        <p class="hint">Operational scope: Cross-customer search, fleet metrics, and damage dispute tracking.</p>
+        <button id="btnLoginStaff" class="btn-launch staff-launch" onclick="handleStaffLogin()">
+          <span>Open Operational Console</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </button>
+      </div>
+
+      <div id="loginError" class="login-error-msg hidden"></div>
     </div>
+  </div>
 
-    <!-- MAIN CHAT SCREEN (Hidden by default, animated in via GSAP) -->
-    <div id="mainChatScreen" class="main-chat-screen hidden">
+  <!-- MAIN COCKPIT DASHBOARD (BRIGHT THEME) -->
+  <div id="mainChatScreen" class="cockpit-container hidden">
+
+    <!-- Top Navigation Header -->
+    <header class="cockpit-header">
+      <div class="brand-group">
+        <div class="brand-symbol">▲</div>
+        <div class="brand-titles">
+          <span class="company-name">NeoStats</span>
+          <span class="app-title">RideWise Assist <span class="badge-pill">v1.0</span></span>
+        </div>
+      </div>
+
+      <!-- Realtime Telemetry Pills -->
+      <div class="telemetry-bar">
+        <div class="telemetry-chip">
+          <span class="indicator-green"></span>
+          <span>LLM: <strong>gpt-oss-120b</strong></span>
+        </div>
+        <div class="telemetry-chip">
+          <span class="indicator-blue"></span>
+          <span>DB: <strong>SQLite (Read-Only)</strong></span>
+        </div>
+        <div class="telemetry-chip">
+          <span class="indicator-purple"></span>
+          <span>RAG: <strong>Hybrid BM25+Dense</strong></span>
+        </div>
+      </div>
+
+      <!-- User Info & Controls -->
+      <div class="header-actions">
+        <div class="active-user-chip" id="headerUserChip">
+          <span class="user-avatar" id="headerAvatar">👤</span>
+          <span class="user-display" id="headerUserName">Aarav Sharma</span>
+          <span class="tier-badge" id="headerTierBadge">GOLD</span>
+        </div>
+        <button class="nav-btn btn-reset-chat" title="Clear conversation context" onclick="handleResetConversation()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          <span>New Session</span>
+        </button>
+        <button class="nav-btn btn-switch-role" title="Switch User Role" onclick="handleLogout()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          <span>Switch</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Cockpit Dual-Pane Layout -->
+    <div class="cockpit-body">
       
-      <!-- Left Sidebar -->
-      <aside class="sidebar">
-        <div class="sidebar-header">
-          <div class="logo-box">
-            <div class="logo-icon">▲</div>
-            <div class="logo-text">
-              <span class="title">NeoStats</span>
-              <span class="version">RideWise Assist 1.0</span>
+      <!-- Left Intelligence Rail -->
+      <aside class="intelligence-rail">
+        
+        <!-- Profile / Status Widget -->
+        <div class="glass-panel profile-widget">
+          <div class="panel-header">
+            <span class="panel-title">Session Entitlements</span>
+            <span class="security-chip">RBAC Verified</span>
+          </div>
+          <div class="entitlements-list" id="entitlementsList">
+            <div class="entitlement-row">
+              <span class="icon-check">✓</span>
+              <span id="railEntitlementText">Scoped to customer bookings</span>
+            </div>
+            <div class="entitlement-row">
+              <span class="icon-check">✓</span>
+              <span>Temporal Policy Routing: v1 vs v2</span>
+            </div>
+            <div class="entitlement-row">
+              <span class="icon-check">✓</span>
+              <span>18% GST & Tier Grace Periods</span>
+            </div>
+            <div class="entitlement-row" id="piiRow">
+              <span class="icon-check">✓</span>
+              <span>Staff PII Masking: Active</span>
             </div>
           </div>
         </div>
 
-        <!-- User Profile Card -->
-        <div id="userProfileCard" class="profile-card">
-          <div class="profile-avatar" id="profileAvatar">👤</div>
-          <div class="profile-details">
-            <div class="profile-name" id="profileName">Loading...</div>
-            <div class="profile-role" id="profileRole">Customer</div>
+        <!-- Operational Knowledge Tabs -->
+        <div class="glass-panel knowledge-widget">
+          <div class="knowledge-tabs">
+            <button class="k-tab-btn active" onclick="switchKnowledgeTab('actions')">Quick Inquiries</button>
+            <button class="k-tab-btn" onclick="switchKnowledgeTab('hubs')">Bangalore Hubs</button>
+            <button class="k-tab-btn" onclick="switchKnowledgeTab('policy')">Policy Slabs</button>
           </div>
-          <div class="tier-pill" id="profileTierPill">STANDARD</div>
+
+          <!-- Tab Content: Quick Inquiries -->
+          <div id="tabContentActions" class="k-tab-content">
+            <div class="quick-inquiries-list" id="quickInquiriesList">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Tab Content: Bangalore Hubs -->
+          <div id="tabContentHubs" class="k-tab-content hidden">
+            <div class="hubs-grid">
+              <div class="hub-pill" onclick="sendQuickMessage('Show fleet availability in Koramangala hub')">
+                <span class="hub-name">Koramangala</span>
+                <span class="hub-status">Main Hub</span>
+              </div>
+              <div class="hub-pill" onclick="sendQuickMessage('Show fleet availability in Indiranagar hub')">
+                <span class="hub-name">Indiranagar</span>
+                <span class="hub-status">Active Fleet</span>
+              </div>
+              <div class="hub-pill" onclick="sendQuickMessage('Show fleet availability in Whitefield hub')">
+                <span class="hub-name">Whitefield</span>
+                <span class="hub-status">IT Corridor</span>
+              </div>
+              <div class="hub-pill" onclick="sendQuickMessage('Show fleet availability in HSR Layout hub')">
+                <span class="hub-name">HSR Layout</span>
+                <span class="hub-status">Active Fleet</span>
+              </div>
+              <div class="hub-pill" onclick="sendQuickMessage('Show fleet availability in Jayanagar hub')">
+                <span class="hub-name">Jayanagar</span>
+                <span class="hub-status">South Hub</span>
+              </div>
+              <div class="hub-pill" onclick="sendQuickMessage('Show fleet availability in Electronic City hub')">
+                <span class="hub-name">Electronic City</span>
+                <span class="hub-status">Phase 1</span>
+              </div>
+              <div class="hub-pill" onclick="sendQuickMessage('Show fleet availability in Hebbal hub')">
+                <span class="hub-name">Hebbal</span>
+                <span class="hub-status">North Hub</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab Content: Policy Matrix -->
+          <div id="tabContentPolicy" class="k-tab-content hidden">
+            <div class="policy-matrix-card">
+              <div class="matrix-title">Cancellation Rules (By booked_at)</div>
+              <div class="matrix-item">
+                <strong>Version 1 (&lt; 1 July 2026):</strong>
+                <span>≥24h: 100% | 6–24h: 50% | &lt;6h: 0%</span>
+              </div>
+              <div class="matrix-item">
+                <strong>Version 2 (≥ 1 July 2026):</strong>
+                <span>≥48h: 100% | 12–48h: 75% | 2–12h: 25% | &lt;2h: 0%</span>
+              </div>
+              <div class="matrix-divider"></div>
+              <div class="matrix-title">Tier Grace &amp; Fees</div>
+              <div class="matrix-item">
+                <strong>Gold Grace Period:</strong> 30 mins (free if ≤30m; full lateness if &gt;30m)
+              </div>
+              <div class="matrix-item">
+                <strong>Late Fee:</strong> 1.5× hourly rate per hour + 18% GST
+              </div>
+              <div class="matrix-item">
+                <strong>EV Low Battery (&lt;10%):</strong> ₹150 flat fee (+18% GST)
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Quick Info Widget -->
-        <div class="widget-box" id="widgetBox">
-          <div class="widget-header">
-            <span class="widget-title">Active Entitlements</span>
-            <span class="widget-badge" id="entitlementBadge">RBAC Verified</span>
-          </div>
-          <div class="widget-content" id="widgetContent">
-            <div class="entitlement-item">
-              <span class="check">✓</span>
-              <span id="entitlementDesc">Scoped strictly to customer bookings</span>
-            </div>
-            <div class="entitlement-item">
-              <span class="check">✓</span>
-              <span>Temporal Policy Router: v1 & v2 aware</span>
-            </div>
-            <div class="entitlement-item">
-              <span class="check">✓</span>
-              <span>18% GST & Tier Grace Periods verified</span>
-            </div>
-            <div class="entitlement-item">
-              <span class="check">✓</span>
-              <span>Staff PII Masking Active</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Quick Prompts Section -->
-        <div class="quick-prompts-section">
-          <div class="section-label">Suggested Inquiries</div>
-          <div class="prompts-list" id="quickPromptsList">
-            <!-- Populated dynamically depending on role -->
-          </div>
-        </div>
-
-        <!-- Sidebar Footer -->
-        <div class="sidebar-footer">
-          <button class="btn-reset" onclick="handleResetConversation()">
-            <svg class="reset-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-            <span>New Conversation</span>
-          </button>
-          <button class="btn-logout" onclick="handleLogout()">
-            <svg class="logout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-            <span>Switch Role</span>
-          </button>
-        </div>
       </aside>
 
-      <!-- Center Chat Area -->
-      <main class="chat-main">
-        <!-- Top Navigation Bar -->
-        <header class="chat-header">
-          <div class="header-status">
-            <span class="status-indicator online"></span>
-            <div>
-              <div class="status-title">NeoStats LLM (gpt-oss-120b) • Win with Intelligence</div>
-              <div class="status-sub">Zero write mutations • Hybrid RAG (BM25 + Dense) • Sublinear Caching</div>
-            </div>
-          </div>
-          <div class="header-tags">
-            <span class="tag">Bangalore Hubs</span>
-            <span class="tag">Data2Value</span>
-            <span class="tag">18% GST</span>
-          </div>
-        </header>
-
-        <!-- Message Feed Area -->
-        <div class="chat-messages" id="chatMessages">
-          <!-- Dynamic chat bubbles rendered here -->
+      <!-- Center Conversational Stream -->
+      <main class="chat-workspace">
+        
+        <!-- Messages Area -->
+        <div class="messages-container" id="chatMessages">
+          <!-- Populated dynamically with bright card bubbles -->
         </div>
 
-        <!-- Typing Indicator (GSAP Animated) -->
-        <div id="typingIndicator" class="typing-indicator hidden">
-          <div class="typing-dot dot-1"></div>
-          <div class="typing-dot dot-2"></div>
-          <div class="typing-dot dot-3"></div>
-          <span class="typing-text">NeoStats Intelligence Engine is evaluating operational records & policy clauses...</span>
+        <!-- Typing Indicator -->
+        <div id="typingIndicator" class="bright-typing-indicator hidden">
+          <div class="typing-bubble">
+            <span class="typing-dot dot-1"></span>
+            <span class="typing-dot dot-2"></span>
+            <span class="typing-dot dot-3"></span>
+            <span class="typing-label">NeoStats Intelligence Engine is synthesizing database records &amp; policy rules...</span>
+          </div>
         </div>
 
-        <!-- Chat Input Footer -->
-        <footer class="chat-input-bar">
-          <div class="input-container">
+        <!-- Floating Bright Input Dock -->
+        <div class="dock-container">
+          <div class="input-dock">
             <textarea 
               id="messageInput" 
-              placeholder="Ask anything about bookings, refunds, late return fees, EV charging..." 
-              rows="1"
+              rows="1" 
+              placeholder="Ask anything about bookings, payments, refunds, late return fees, EV charging..." 
               onkeydown="handleKeyDown(event)"
             ></textarea>
-            <button id="btnSend" class="btn-send" onclick="handleSendMessage()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+            <button id="btnSend" class="btn-dock-send" onclick="handleSendMessage()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
             </button>
           </div>
-          <div class="input-disclaimer">
-            <span>Enterprise Guardrails Active • Powered by NeoStats AI Engineering & Azure OpenAI</span>
+          <div class="dock-meta">
+            <span>Deterministic Read-Only SQL • Strict RBAC Scoping • Verified Ledger &amp; Document Citations</span>
           </div>
-        </footer>
+        </div>
+
       </main>
 
     </div>
