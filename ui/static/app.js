@@ -7,6 +7,11 @@
 let currentSession = null;
 let currentRole = "customer"; // 'customer' or 'support_agent'
 
+// API Base URL (defaults to relative if served via http/https, falls back to localhost:8000 if opened directly)
+const API_BASE = (window.location.protocol === "http:" || window.location.protocol === "https:")
+  ? ""
+  : "http://127.0.0.1:8000";
+
 // Pre-defined quick prompts by role
 const CUSTOMER_PROMPTS = [
   "Show my latest bookings and statuses",
@@ -169,7 +174,7 @@ async function performLogin(payload) {
   btn.style.opacity = "0.7";
 
   try {
-    const res = await fetch("/api/auth/login", {
+    const res = await fetch(`${API_BASE}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -273,7 +278,7 @@ async function handleSendMessage() {
   showTyping(true);
 
   try {
-    const res = await fetch("/api/chat", {
+    const res = await fetch(`${API_BASE}/api/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -404,7 +409,7 @@ async function handleResetConversation() {
   gsap.to(".reset-icon", { rotation: "+=360", duration: 0.5, ease: "power2.out" });
 
   try {
-    await fetch("/api/chat/reset", {
+    await fetch(`${API_BASE}/api/chat/reset`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ session_id: currentSession.session_id })
