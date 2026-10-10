@@ -63,6 +63,27 @@ def get_customer_by_id(customer_id: str, mask_pii: bool = False) -> Optional[Dic
     finally:
         conn.close()
 
+def search_customers_by_name(name_query: str, mask_pii: bool = False, limit: int = 5) -> List[Dict[str, Any]]:
+    """Search customers by full_name substring. Optionally masks PII."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT * FROM customers WHERE LOWER(full_name) LIKE ? ORDER BY customer_id LIMIT ?",
+            (f"%{name_query.strip().lower()}%", limit)
+        )
+        rows = cursor.fetchall()
+        results = []
+        for r in rows:
+            d = dict(r)
+            if mask_pii:
+                d = mask_customer_pii(d)
+            results.append(d)
+        return results
+    finally:
+        conn.close()
+
+
 def get_customer_bookings(customer_id: str, limit: int = 10) -> List[Dict[str, Any]]:
     """Fetch all bookings for a given customer with vehicle details."""
     conn = get_db_connection()
