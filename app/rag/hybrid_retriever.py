@@ -10,6 +10,10 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 from app.rag.knowledge_base import POLICY_CHUNKS
+from app.rag.hf_embedding import hf_embedder
+import logging
+
+logger = logging.getLogger(__name__)
 
 from sklearn.feature_extraction import text
 
@@ -33,7 +37,7 @@ class HybridPolicyRetriever:
         tokenized_corpus = [self._tokenize(text) for text in self.corpus_texts]
         self.bm25 = BM25Okapi(tokenized_corpus)
         
-        # Initialize Semantic TF-IDF Vectorizer with word & sub-word n-grams
+        # Initialize Semantic TF-IDF Vectorizer with word & sub-word n-grams (Fast local baseline)
         self.vectorizer = TfidfVectorizer(
             ngram_range=(1, 3),
             sublinear_tf=True,
@@ -42,6 +46,17 @@ class HybridPolicyRetriever:
             stop_words="english"
         )
         self.tfidf_matrix = self.vectorizer.fit_transform(self.corpus_texts)
+
+        # Initialize Hugging Face Neural Dense Embedder (BAAI/bge-base-en-v1.5)
+        self.hf_embedder = hf_embedder
+        self.hf_corpus_matrix: Optional[np.ndarray] = None
+        if self.hf_embedder.is_configured:
+            try:
+                self.hf_corpus_matrix = self.hf_embedder.get_embeddings(self.corpus_texts)
+                if self.hf_corpus_matrix is not None:
+                    logger.info(f"Loaded Hugging Face neural embeddings using {self.hf_embedder.model_id}")
+            except Exception as e:
+                logger.warning(f"Could not initialize Hugging Face embeddings at startup: {e}")
 
     def _tokenize(self, text: str) -> List[str]:
         # Lowercase and split on non-alphanumeric except ₹, %, -
@@ -82,19 +97,36 @@ class HybridPolicyRetriever:
         query_tokens = self._tokenize(query)
         bm25_scores = self.bm25.get_scores(query_tokens) if query_tokens else np.zeros(len(self.chunks))
 
-        # 2. Semantic Dense Search
-        query_vec = self.vectorizer.transform([query])
-        semantic_scores = cosine_similarity(query_vec, self.tfidf_matrix).flatten()
+        # 2. Semantic Dense Search (Hugging Face Neural Embeddings or TF-IDF Fallback)
+        semantic_scores: Optional[np.ndarray] = None
+        using_hf = False
+
+        if self.hf_embedder.is_configured:
+            if self.hf_corpus_matrix is None:
+                self.hf_corpus_matrix = self.hf_embedder.get_embeddings(self.corpus_texts)
+
+            if self.hf_corpus_matrix is not None:
+                q_emb = self.hf_embedder.get_query_embedding(query)
+                if q_emb is not None:
+                    # Cosine similarity with L2-normalized vectors
+                    semantic_scores = np.dot(self.hf_corpus_matrix, q_emb)
+                    using_hf = True
+
+        # Fallback to local sublinear TF-IDF if Hugging Face is unconfigured or unreachable
+        if semantic_scores is None:
+            query_vec = self.vectorizer.transform([query])
+            semantic_scores = cosine_similarity(query_vec, self.tfidf_matrix).flatten()
 
         # 3. Reciprocal Rank Fusion (RRF) with strict relevance gating
         # Only rank chunks that have meaningful signal:
         # - BM25: score > 0.5
-        # - Semantic: cosine similarity >= 0.12
+        # - Semantic: >= 0.40 for Hugging Face BGE, or >= 0.12 for TF-IDF
         bm25_hits = [(score, idx) for idx, score in enumerate(bm25_scores) if score > 0.5]
         bm25_hits.sort(key=lambda x: x[0], reverse=True)
         bm25_ranks = {idx: rank + 1 for rank, (score, idx) in enumerate(bm25_hits)}
 
-        sem_hits = [(score, idx) for idx, score in enumerate(semantic_scores) if score >= 0.12]
+        min_sem_threshold = 0.40 if using_hf else 0.12
+        sem_hits = [(score, idx) for idx, score in enumerate(semantic_scores) if score >= min_sem_threshold]
         sem_hits.sort(key=lambda x: x[0], reverse=True)
         sem_ranks = {idx: rank + 1 for rank, (score, idx) in enumerate(sem_hits)}
 

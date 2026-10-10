@@ -14,6 +14,10 @@ class Settings:
     AZURE_OPENAI_MODEL_NAME: str = os.getenv("AZURE_OPENAI_MODEL_NAME", "gpt-oss-120b")
     AZURE_OPENAI_DEPLOYMENT_NAME: str = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "Neo-Hackathon")
 
+    # Hugging Face Embeddings Configuration
+    HUGGINGFACE_API_KEY: str = os.getenv("HUGGINGFACE_API_KEY", os.getenv("HF_TOKEN", ""))
+    HUGGINGFACE_EMBEDDING_MODEL: str = os.getenv("HUGGINGFACE_EMBEDDING_MODEL", "BAAI/bge-base-en-v1.5")
+
     # Database Path
     DB_PATH_ENV = os.getenv("DATABASE_PATH", "Neostats Hackathon AI Usecase/ridewise.db")
     DATABASE_PATH: Path = (BASE_DIR / DB_PATH_ENV).resolve() if not Path(DB_PATH_ENV).is_absolute() else Path(DB_PATH_ENV)
