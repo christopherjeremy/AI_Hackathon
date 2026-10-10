@@ -17,13 +17,13 @@
 - **What I decided:** Rather than building a single monolithic prompt with tool calling, I broke down the conversation flow into an explicit, compiled **LangGraph** (`Router` $\rightarrow$ `RBAC Guard` $\rightarrow$ `DB Execution` $\rightarrow$ `RAG Retrieval` $\rightarrow$ `Synthesizer` $\rightarrow$ `Verifier`).
 - **Why I made this call:**
   1. **Security first:** If you rely on the LLM to enforce privacy ("please only show data if customer matches"), clever prompt injection or edge-case wording can trick it into returning other customers' phone numbers, addresses, or trip costs. By sticking an RBAC Guard node in Python *ahead* of the database execution, cross-customer data leakage is rendered virtually impossible.
-  2. **Speed & cost:** High-frequency everyday queries (like *"What's my profile info?"* or *"List my rides"*) never even need an LLM pass—they trigger deterministic shortcuts in under a millisecond, saving precious tokens and latency.
+  2. **Conversational Intelligence over Hardcoded Logic:** Rather than short-circuiting queries with rigid hardcoded string templates, all profile, booking, and policy requests flow through the DB execution and hybrid RAG layers into the LLM synthesizer. This ensures responses are genuinely conversational, naturally phrased, and dynamically grounded in live SQLite records without any pre-baked answers.
   3. **Arithmetic accuracy:** Combining SQL operational values (hourly rate, return timestamp, actual lateness) with retrieved policy text (e.g., $1.5\times$ penalty multiplier + 18% GST) into structured prompt state gives the model all the facts in one place, avoiding weird math errors.
 
-### Decision 3: Multi-Tier Caching + Manual Grounding of Scanned Annexures
-- **What I decided:** I combined a fast multi-tier cache (deterministic intent shortcuts + cosine semantic FAQ caching + SQLite query caching) with Tenacity exponential backoff retries. On top of that, I personally inspected and transcribed the scanned image annexures (**Annexure 1 of RW-POL-03** and **Annexure A of RW-POL-04**) into clean markdown chunks.
+### Decision 3: Dynamic Runtime Semantic Caching + Manual Grounding of Scanned Annexures
+- **What I decided:** I built a dynamic semantic cache (which starts completely unseeded with zero hardcoded answers, caching only genuine LLM-synthesized policy answers at runtime with TF-IDF cosine similarity $\ge 0.95$) alongside Tenacity exponential backoff retries. On top of that, I personally inspected and transcribed the scanned image annexures (**Annexure 1 of RW-POL-03** and **Annexure A of RW-POL-04**) into clean markdown chunks.
 - **Why I made this call:**
-  1. Anyone who has participated in a live hackathon with shared Azure OpenAI endpoints knows how brutal `429 Too Many Requests` rate limits can be. Caching common questions drops latency to near zero and protects our API budget.
+  1. Shared Azure OpenAI endpoints during hackathons can experience `429 Too Many Requests` rate limits. Caching dynamic policy responses at runtime protects our API budget while never serving fake or hardcoded mock answers.
   2. Standard text extractors (like basic `pypdf` or `pdfplumber`) often choke or produce gibberish on scanned images. Those two annexures held two critical edge cases: the Gold Tier 30-minute late return grace period and the 4-tier refund schedule. Transcribing and chunking them cleanly ensured the assistant never missed these details.
 
 ---
