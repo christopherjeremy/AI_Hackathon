@@ -13,6 +13,7 @@ from app.graph.state import RideWiseState
 from app.database.repository import (
     get_customer_by_id,
     get_customer_bookings,
+    get_customer_penalties,
     get_booking_details,
     get_vehicle_by_id,
     get_fleet_summary,
@@ -250,12 +251,19 @@ def db_execution_node(state: RideWiseState) -> Dict[str, Any]:
             else:
                 sql_context["booking_not_found"] = f"Booking {booking_id} was not found in the RideWise database."
 
-    # 3. Customer bookings list (if customer asks about bookings or trips)
+    # 3. Customer bookings & penalties list
     if role == "customer":
         booking_keywords = ("booking", "bookings", "ride", "rides", "trip", "trips", "recent", "history", "my rides", "my bookings", "orders")
+        penalty_keywords = ("penalty", "penalties", "fine", "fines", "charged", "fee", "fees", "late fee", "damage charge", "my penalty", "my fine")
+        
         if not booking_id and (any(k in lower_msg for k in booking_keywords) or state.get("intent") in ("db_query", "hybrid")):
             user_bookings = get_customer_bookings(user_id, limit=5)
             sql_context["customer_recent_bookings"] = user_bookings
+
+        if any(k in lower_msg for k in penalty_keywords):
+            user_penalties = get_customer_penalties(user_id, limit=10)
+            sql_context["customer_penalties"] = user_penalties
+
 
     # 4. Specific vehicle lookup
     if vehicle_id:
@@ -276,14 +284,15 @@ def db_execution_node(state: RideWiseState) -> Dict[str, Any]:
 
     # 7. Support Agent Customer Lookup (by ID or Name, with strict PII masking)
     if role == "support_agent":
+        target_cid = None
         if customer_id_target:
             cust_info = get_customer_by_id(customer_id_target, mask_pii=True)
             if cust_info:
+                target_cid = customer_id_target
                 sql_context["queried_customer"] = cust_info
-                sql_context["queried_customer_bookings"] = get_customer_bookings(customer_id_target, limit=5)
             else:
                 sql_context["customer_not_found"] = f"Customer `{customer_id_target}` was not found in the RideWise database."
-        elif any(k in lower_msg for k in ("customer", "user", "client", "member", "account", "profile")):
+        elif any(k in lower_msg for k in ("customer", "user", "client", "member", "account", "profile", "fine", "penalty")):
             # Check if an actual customer name from database is mentioned in query
             name_candidates = re.findall(r"\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\b", last_user_msg)
             found_custs = []
@@ -296,15 +305,20 @@ def db_execution_node(state: RideWiseState) -> Dict[str, Any]:
                     break
             
             if found_custs:
+                target_cid = found_custs[0]["customer_id"]
                 sql_context["queried_customer"] = found_custs[0]
-                sql_context["queried_customer_bookings"] = get_customer_bookings(found_custs[0]["customer_id"], limit=5)
                 if len(found_custs) > 1:
                     sql_context["multiple_customer_matches"] = [
                         {"customer_id": c["customer_id"], "full_name": c["full_name"], "tier": c["customer_tier"]}
                         for c in found_custs
                     ]
 
+        if target_cid:
+            sql_context["queried_customer_bookings"] = get_customer_bookings(target_cid, limit=5)
+            sql_context["queried_customer_penalties"] = get_customer_penalties(target_cid, limit=10)
+
     return {"sql_context": sql_context}
+
 
 
 
