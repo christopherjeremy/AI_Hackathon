@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: ridewise-assist
+    env: python
+    region: singapore
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: AZURE_OPENAI_ENDPOINT
+        sync: false
+      - key: AZURE_OPENAI_API_KEY
+        sync: false
+      - key: AZURE_OPENAI_MODEL_NAME
+        value: gpt-oss-120b
+      - key: AZURE_OPENAI_DEPLOYMENT_NAME
+        value: Neo-Hackathon
+      - key: DATABASE_PATH
+        value: Neostats Hackathon AI Usecase/ridewise.db
+      - key: POLICIES_DIR
+        value: Neostats Hackathon AI Usecase
