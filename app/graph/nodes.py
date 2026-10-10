@@ -14,6 +14,7 @@ from app.database.repository import (
     get_customer_by_id,
     get_customer_bookings,
     get_customer_penalties,
+    get_all_customer_penalties_summary,
     get_booking_details,
     get_vehicle_by_id,
     get_fleet_summary,
@@ -117,25 +118,25 @@ def router_node(state: RideWiseState) -> Dict[str, Any]:
     user_db_signals = (
         "my booking", "my bookings", "my ride", "my rides", "my trip", "my trips",
         "my account", "my profile", "my tier", "my kyc", "who am i", "my details",
-        "show bookings", "list bookings", "all bookings", "my refund",
+        "show bookings", "list bookings", "all bookings", "my refund", "my penalty", "my penalties", "my fine", "my fines",
         "change details", "update details", "edit details", "change my", "update my", "edit my",
         "delete", "delete account", "delete my account", "remove account", "close account"
     )
     has_specific_db_target = bool(
         extracted_booking or extracted_customer or extracted_vehicle or extracted_hub or
         any(k in lower_msg for k in user_db_signals) or
-        (role == "support_agent" and any(k in lower_msg for k in ("fleet", "damage", "claim", "claims", "cust0", "customer")))
+        (role == "support_agent" and any(k in lower_msg for k in ("fleet", "damage", "claim", "claims", "cust0", "customer", "customer wise", "penalties", "fines")))
     )
 
     policy_keywords = (
         "policy", "policies", "refund", "refunds", "cancel", "cancellation",
-        "penalty", "penalties", "late fee", "late return", "delay", "grace period",
-        "gst", "tax", "charge", "charges", "deposit", "battery", "ev", "charging",
+        "late fee", "late return", "delay", "grace period",
+        "gst", "tax", "deposit", "battery", "ev", "charging",
         "charger", "breakdown", "towing", "tier benefit", "rules", "terms"
     )
     has_policy_kw = any(w in lower_msg for w in policy_keywords)
 
-    general_db_keywords = ("fleet", "hub", "availability", "available", "damage", "claims")
+    general_db_keywords = ("fleet", "hub", "availability", "available", "damage", "claims", "customer wise", "all penalties", "penalties summary", "top penalties")
     has_general_db = any(k in lower_msg for k in general_db_keywords)
 
     if is_greeting and not (has_specific_db_target or has_policy_kw or has_general_db):
@@ -145,6 +146,7 @@ def router_node(state: RideWiseState) -> Dict[str, Any]:
     elif has_specific_db_target or has_general_db:
         intent = "db_query"
     elif has_policy_kw:
+
         intent = "policy_rag"
     else:
         intent = "general"
@@ -317,7 +319,12 @@ def db_execution_node(state: RideWiseState) -> Dict[str, Any]:
             sql_context["queried_customer_bookings"] = get_customer_bookings(target_cid, limit=5)
             sql_context["queried_customer_penalties"] = get_customer_penalties(target_cid, limit=10)
 
+        # 8. Fleet-wide Customer Penalty Summary (Support Agent only)
+        if any(k in lower_msg for k in ("customer wise penalties", "customer-wise penalties", "customer wise penalty", "all penalties", "penalties summary", "penalty summary", "top penalties", "penalties per customer")):
+            sql_context["fleet_customer_penalties_summary"] = get_all_customer_penalties_summary(limit=15)
+
     return {"sql_context": sql_context}
+
 
 
 
@@ -506,8 +513,12 @@ def synthesizer_node(state: RideWiseState) -> Dict[str, Any]:
         if sql_ctx.get("fleet_summary") and any(k in last_user_msg.lower() for k in ("fleet", "hub", "availability", "available", "vehicles", "scooters", "bikes")):
             final_citations.append("DB: vehicles")
 
+        if sql_ctx.get("fleet_customer_penalties_summary"):
+            final_citations.append("DB: payments.payment_type='PENALTY'")
+
         if sql_ctx.get("open_damage_claims") and any(k in last_user_msg.lower() for k in ("damage", "claim", "claims", "repairs")):
             final_citations.append("DB: damage_reports")
+
 
         # Deduplicate while preserving order
         deduped_citations = []
