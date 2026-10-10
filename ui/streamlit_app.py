@@ -174,11 +174,13 @@ if user_input:
         res = ridewise_app.invoke(graph_input)
         reply = res.get("final_response", "No response generated.")
         citations = res.get("citations", [])
+        err_detail = res.get("error_message")
 
     st.session_state.messages.append({
         "role": "assistant",
         "content": reply,
-        "citations": citations
+        "citations": citations,
+        "error_message": err_detail
     })
 
     with st.chat_message("assistant"):
@@ -187,3 +189,7 @@ if user_input:
             with st.expander("📚 Sources & Citations"):
                 for c in citations:
                     st.code(c)
+        if err_detail:
+            with st.expander("⚠️ Diagnostics & Error Log"):
+                st.warning(f"Engine Exception: {err_detail}")
+
