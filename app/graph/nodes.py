@@ -85,7 +85,8 @@ def router_node(state: RideWiseState) -> Dict[str, Any]:
     user_db_signals = (
         "my booking", "my bookings", "my ride", "my rides", "my trip", "my trips",
         "my account", "my profile", "my tier", "my kyc", "who am i", "my details",
-        "show bookings", "list bookings", "all bookings", "my refund"
+        "show bookings", "list bookings", "all bookings", "my refund",
+        "change details", "update details", "edit details", "change my", "update my", "edit my"
     )
     has_specific_db_target = bool(
         extracted_booking or extracted_vehicle or extracted_hub or
@@ -344,30 +345,37 @@ def synthesizer_node(state: RideWiseState) -> Dict[str, Any]:
         "2. USER PROFILE & DETAILS:\n"
         "   - When a customer asks about their profile, tier, KYC, or account details, explain them clearly from the database context.\n"
         "   - Cite [DB: customers.customer_id={user_id}].\n\n"
-        "3. BOOKING LISTS & INQUIRIES:\n"
+        "3. ACCOUNT & CONTACT DETAIL MODIFICATIONS:\n"
+        "   - Customers CANNOT modify or edit personal/contact details (name, phone, email, address, KYC) via the AI assistant chat.\n"
+        "   - DO NOT hallucinate fake OTP steps, form links, or imaginary database write operations.\n"
+        "   - Clearly inform the customer that accounts and KYC records are strictly read-only in self-service, and they must reach out to RideWise Support directly at support@ridewise.example or +91 80 4000 1234 (7:00 AM - 11:00 PM IST) [RW-POL-01 § 9].\n\n"
+        "4. BOOKING LISTS & INQUIRIES:\n"
         "   - When a customer asks for their bookings or rides, summarize their recent bookings from the database context with booking ID, vehicle model, status, and dates.\n"
         "   - Cite [DB: bookings.customer_id={user_id}].\n\n"
-        "4. TEMPORAL CANCELLATION RULES:\n"
+        "5. TEMPORAL CANCELLATION RULES:\n"
         "   - Bookings made BEFORE 1 July 2026, 00:00 IST follow Version 1 (RW-POL-02): >=24h = 100%, 6-24h = 50%, <6h = 0%.\n"
         "   - Bookings made ON OR AFTER 1 July 2026, 00:00 IST follow Version 2 (RW-POL-03): >=48h = 100%, 12-48h = 75%, 2-12h = 25%, <2h = 0%.\n"
         "   - The cancellation policy version depends ONLY on when the booking was MADE (booked_at), NOT when it was cancelled or scheduled.\n\n"
-        "5. LATE RETURN CHARGES & TIERS:\n"
+        "6. LATE RETURN CHARGES & TIERS:\n"
         "   - 1.5 × vehicle hourly rate per hour or part thereof (e.g. 20 min late counts as 1 full hour).\n"
         "   - GOLD Tier: Receives a 30-minute grace period. If returned <= 30 mins late, fee is ₹0. If > 30 mins late, the entire lateness is charged.\n"
         "   - Standard and Silver tiers have NO grace period.\n"
         "   - GST: All penalties attract 18% GST (e.g., ₹180 late fee + 18% GST = ₹212.40 total).\n\n"
-        "6. EV LOW-BATTERY FEE:\n"
+        "7. EV LOW-BATTERY FEE:\n"
         "   - Returned below 10%: Flat ₹150 fee (+ 18% GST = ₹177 total).\n"
         "   - Returned at 10% or above: ₹0 (Exactly 10% is not below 10%, so ₹0).\n\n"
-        "7. SECURITY DEPOSITS:\n"
+        "8. SECURITY DEPOSITS:\n"
         "   - Held via payment gateway and refunded in full within 3 days upon cancellation/trip completion. Deposit releases are handled by gateway and are not recorded as rows in the SQLite payments table.\n\n"
-        "8. STATUS CODES:\n"
+        "9. STATUS CODES:\n"
         "   - UPC=Upcoming, ONG=Ongoing, CMP=Completed, CNL_U=Cancelled by Customer, CNL_S=Cancelled by RideWise, NSH=No-show.\n\n"
-        "9. CITATIONS & ARITHMETIC:\n"
-        "   - Always cite exact database table/fields (e.g. [DB: bookings.booking_id=B-0001]) and policy sections (e.g. [RW-POL-04 § 1.2]).\n"
+        "10. CITATIONS & ARITHMETIC:\n"
+        "   - ONLY cite documents and sections that directly support your answer. DO NOT spam or list irrelevant policy citations.\n"
         "   - Show explicit mathematical steps for any fee, penalty, or refund calculation.\n\n"
-        "10. MANDATORY PII PROTECTION FOR SUPPORT AGENTS:\n"
+        "11. MANDATORY PII PROTECTION FOR SUPPORT AGENTS:\n"
         "   - When Active Role is SUPPORT_AGENT, customer phone numbers and emails MUST ALWAYS be partially masked in responses (e.g. Phone: 98450****5, Email: aa***@gmail.com).\n\n"
+        "12. STRICT GROUNDING & ZERO HALLUCINATION DIRECTIVE:\n"
+        "   - You must NEVER extrapolate, invent, or assume any feature, service, API, portal, OTP flow, or policy rule that is not explicitly stated in the DATABASE CONTEXT or RELEVANT POLICY DOCUMENTS.\n"
+        "   - If a requested action or piece of information is not present in the provided context, state truthfully and concisely that it is not available or not supported, and refer the user to official support.\n\n"
         f"=== DATABASE CONTEXT ===\n{db_summary}\n\n"
         f"=== RELEVANT POLICY DOCUMENTS ===\n{formatted_policies}\n"
     )
@@ -378,7 +386,7 @@ def synthesizer_node(state: RideWiseState) -> Dict[str, Any]:
         llm_messages.append({"role": m["role"], "content": m["content"]})
 
     try:
-        completion = llm_client.chat_completion(messages=llm_messages, temperature=0.1)
+        completion = llm_client.chat_completion(messages=llm_messages, temperature=0.0)
         response_text = completion["content"]
 
         # Gather relevant citations
@@ -440,10 +448,42 @@ def synthesizer_node(state: RideWiseState) -> Dict[str, Any]:
 def verifier_node(state: RideWiseState) -> Dict[str, Any]:
     """
     Final output check to guarantee citations and response integrity.
+    Filters out spurious policy citations that have nothing to do with the generated answer.
     """
     final_resp = state.get("final_response") or ""
-    citations = state.get("citations") or []
+    raw_citations = state.get("citations") or []
+    intent = state.get("intent", "general")
+
+    filtered_citations = []
+    for c in raw_citations:
+        # Keep DB citations if DB data was relevant
+        if c.startswith("DB:"):
+            filtered_citations.append(c)
+            continue
+
+        # For policy citations, check if relevant to the response or intent
+        c_lower = c.lower()
+        resp_lower = final_resp.lower()
+        if "rw-pol-01" in c_lower:
+            if any(k in resp_lower for k in ("support", "contact", "email", "phone", "kyc", "terms", "deposit", "agreement")):
+                filtered_citations.append(c)
+        elif "rw-pol-02" in c_lower or "rw-pol-03" in c_lower:
+            if any(k in resp_lower for k in ("cancel", "cancellation", "refund", "slab")):
+                filtered_citations.append(c)
+        elif "rw-pol-04" in c_lower:
+            if any(k in resp_lower for k in ("late return", "late fee", "grace period", "damage", "scratch", "dent", "penalty schedule")):
+                filtered_citations.append(c)
+        elif "rw-pol-05" in c_lower:
+            if any(k in resp_lower for k in ("battery", "charging", "ev", "range", "soc")):
+                filtered_citations.append(c)
+        else:
+            filtered_citations.append(c)
+
+    # Fallback to keep at least 1 citation if raw had any
+    if not filtered_citations and raw_citations:
+        filtered_citations = [raw_citations[0]]
+
     return {
         "final_response": final_resp,
-        "citations": citations
+        "citations": list(dict.fromkeys(filtered_citations))
     }

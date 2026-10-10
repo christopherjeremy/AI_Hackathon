@@ -33,7 +33,7 @@ class LLMClient:
     def chat_completion(
         self,
         messages: List[Dict[str, str]],
-        temperature: float = 0.2,
+        temperature: float = 0.0,
         max_tokens: int = 1000
     ) -> Dict[str, Any]:
         """
