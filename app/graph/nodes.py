@@ -86,7 +86,8 @@ def router_node(state: RideWiseState) -> Dict[str, Any]:
         "my booking", "my bookings", "my ride", "my rides", "my trip", "my trips",
         "my account", "my profile", "my tier", "my kyc", "who am i", "my details",
         "show bookings", "list bookings", "all bookings", "my refund",
-        "change details", "update details", "edit details", "change my", "update my", "edit my"
+        "change details", "update details", "edit details", "change my", "update my", "edit my",
+        "delete", "delete account", "delete my account", "remove account", "close account"
     )
     has_specific_db_target = bool(
         extracted_booking or extracted_vehicle or extracted_hub or
@@ -345,10 +346,11 @@ def synthesizer_node(state: RideWiseState) -> Dict[str, Any]:
         "2. USER PROFILE & DETAILS:\n"
         "   - When a customer asks about their profile, tier, KYC, or account details, explain them clearly from the database context.\n"
         "   - Cite [DB: customers.customer_id={user_id}].\n\n"
-        "3. ACCOUNT & CONTACT DETAIL MODIFICATIONS:\n"
-        "   - Customers CANNOT modify or edit personal/contact details (name, phone, email, address, KYC) via the AI assistant chat.\n"
-        "   - DO NOT hallucinate fake OTP steps, form links, or imaginary database write operations.\n"
-        "   - Clearly inform the customer that accounts and KYC records are strictly read-only in self-service, and they must reach out to RideWise Support directly at support@ridewise.example or +91 80 4000 1234 (7:00 AM - 11:00 PM IST) [RW-POL-01 § 9].\n\n"
+        "3. ACCOUNT MODIFICATIONS & ACCOUNT DELETION:\n"
+        "   - Customers CANNOT modify, edit, or delete personal/account details (name, phone, email, address, KYC, or account deletion) via this AI assistant chat.\n"
+        "   - DO NOT hallucinate fake OTP steps, fake 7-day data erasure workflows, 'YES, DELETE MY ACCOUNT' confirmation prompts, or imaginary database delete operations.\n"
+        "   - The assistant is strictly READ-ONLY. Account deletion, KYC updates, or profile modifications are NOT supported in self-service.\n"
+        "   - Inform the customer clearly and concisely that account deletion and profile modifications cannot be processed via chat, and they must contact RideWise Support directly at support@ridewise.example or +91 80 4000 1234 (7:00 AM - 11:00 PM IST) [RW-POL-01 § 9].\n\n"
         "4. BOOKING LISTS & INQUIRIES:\n"
         "   - When a customer asks for their bookings or rides, summarize their recent bookings from the database context with booking ID, vehicle model, status, and dates.\n"
         "   - Cite [DB: bookings.customer_id={user_id}].\n\n"
