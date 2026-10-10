@@ -21,6 +21,7 @@ from app.database.repository import (
     get_fleet_summary,
     get_open_damage_claims,
     search_customers_by_name,
+    execute_readonly_sql,
     STATUS_CODE_MAP
 )
 from app.rag.hybrid_retriever import retriever
@@ -336,7 +337,42 @@ def db_execution_node(state: RideWiseState) -> Dict[str, Any]:
         elif any(k in lower_msg for k in ("kyc reject", "reject customer", "rejected customer", "kyc rejected", "rejected kyc", "failed kyc", "reject list", "rejection list")) or ("kyc" in lower_msg and "reject" in lower_msg):
             sql_context["kyc_rejected_customers"] = get_customers_by_kyc_status("REJECTED", mask_pii=True, limit=20)
 
+    # 10. Dynamic Text-to-SQL Fallback (Zero hardcoding - runs custom SQL for arbitrary customer/fleet queries)
+    if not sql_context and state.get("intent") in ("db_query", "hybrid", "general"):
+        # Ask LLM to generate safe SELECT SQL query
+        schema_desc = (
+            "SQLite Tables:\n"
+            "- customers(customer_id, full_name, phone, email, city, kyc_status, customer_tier, created_at)\n"
+            "- bookings(booking_id, customer_id, vehicle_id, booked_at, scheduled_start, scheduled_end, actual_return_at, cancelled_at, booking_status, return_battery_pct)\n"
+            "- vehicles(vehicle_id, registration_no, vehicle_type, model, hub_name, hourly_rate, daily_rate, battery_capacity_kwh, status)\n"
+            "- payments(payment_id, booking_id, payment_type, amount, gst_amount, payment_status, remarks, paid_at)\n"
+            "- damage_reports(report_id, booking_id, vehicle_id, damage_category, severity, description, assessed_cost, claim_status)"
+        )
+        sql_prompt = (
+            f"You are a SQL generator for RideWise Assist. Active role: {role.upper()}.\n"
+            f"{schema_desc}\n\n"
+            f"User Query: '{last_user_msg}'\n"
+            "If this question requires data from the database, write a valid read-only SQLite SELECT query. "
+            "If no database data is needed, reply 'NONE'. "
+            "Output ONLY the SQL query or 'NONE', without markdown fences or explanation."
+        )
+        try:
+            sql_resp = llm_client.chat_completion(messages=[{"role": "user", "content": sql_prompt}], temperature=0.0)
+            candidate_sql = sql_resp["content"].strip().replace("```sql", "").replace("```", "").strip()
+            if candidate_sql.upper().startswith("SELECT") or candidate_sql.upper().startswith("WITH"):
+                # Run query safely with RBAC validation
+                exec_result = execute_readonly_sql(candidate_sql, role=role, customer_id=user_id if role == "customer" else None)
+                if not exec_result.get("error"):
+                    sql_context["dynamic_query"] = {
+                        "sql": candidate_sql,
+                        "results": exec_result.get("rows", []),
+                        "total_count": exec_result.get("total_count", 0)
+                    }
+        except Exception as e:
+            logger.warning(f"Dynamic SQL generation failed: {e}")
+
     return {"sql_context": sql_context}
+
 
 
 
@@ -531,10 +567,14 @@ def synthesizer_node(state: RideWiseState) -> Dict[str, Any]:
         if sql_ctx.get("fleet_customer_penalties_summary"):
             final_citations.append("DB: payments.payment_type='PENALTY'")
 
+        if sql_ctx.get("dynamic_query"):
+            final_citations.append("DB: ridewise.db (SQL Query)")
+
         if sql_ctx.get("kyc_pending_customers"):
             final_citations.append("DB: customers.kyc_status='PENDING'")
         elif sql_ctx.get("kyc_rejected_customers"):
             final_citations.append("DB: customers.kyc_status='REJECTED'")
+
 
         if sql_ctx.get("open_damage_claims") and any(k in last_user_msg.lower() for k in ("damage", "claim", "claims", "repairs")):
             final_citations.append("DB: damage_reports")
