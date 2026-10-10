@@ -1,0 +1,50 @@
+DOC_ID: RW-POL-02
+TITLE: Cancellation and Refund Policy v1
+VERSION: 1.0
+EFFECTIVE: 2025-01-01
+
+
+--- Page 1 ---
+RW-POL-02  ·  v1
+RideWise Mobility Pvt. Ltd.  ·  Customer policy document
+Page 1
+Cancellation & Refund Policy
+Document RW-POL-02 · Version 1 · Effective 1 January 2025
+Scope. This version applies to bookings made before 1 July 2026, 00:00 IST. Bookings made on
+or after that time follow Version 2 of this policy (RW-POL-03). The version is decided by when the
+booking was made, not by when it was cancelled or when the rental starts.
+1. Cancellation by the customer
+1.1 The customer can cancel a booking in the RideWise app at any time before the scheduled pickup
+time. The refund depends on how long before the scheduled pickup the cancellation is made:
+Time between cancellation and scheduled pickup
+Refund of rental charge
+24 hours or more
+100%
+6 hours or more, but less than 24 hours
+50%
+Less than 6 hours
+No refund (0%)
+1.2 The refund percentage is applied to the rental charge actually paid. GST on the refunded amount
+is refunded in the same proportion.
+2. Cancellation by RideWise
+2.1 If RideWise cancels a booking for any reason (for example vehicle unavailability or KYC not
+verified), the customer receives a 100% refund, whatever the timing.
+3. No-shows
+3.1 A no-show (see Rental Agreement clause 7) is not a cancellation. No refund is given for a
+no-show.
+4. Refund processing
+4.1 Refunds are initiated within 3 working days of the cancellation and credited to the original
+payment method within 5 to 7 working days.
+4.2 Security deposits are returned in full on cancellation and are not subject to this refund schedule.
+5. Example
+Example
+Booking made
+10 May 2026, 18:00 IST (Version 1 applies)
+Scheduled pickup
+20 May 2026, 09:00 IST
+Cancelled
+19 May 2026, 21:00 IST, which is 12 hours before pickup
+Rental charge paid
+₹500
+Refund
+50% of ₹500 = ₹250 (plus GST of ₹45 refunded)

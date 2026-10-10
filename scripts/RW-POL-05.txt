@@ -1,0 +1,92 @@
+DOC_ID: RW-POL-05
+TITLE: EV User Guide & FAQ
+VERSION: 1.4
+EFFECTIVE: 2025-01-01
+
+
+--- Page 1 ---
+RW-POL-05  ·  v1.4
+RideWise Mobility Pvt. Ltd.  ·  Customer policy document
+Page 1
+EV User Guide & FAQ
+Document RW-POL-05 · Version 1.4 · For EV scooters and EV bikes
+This guide explains how to ride, charge and return a RideWise electric vehicle. Charges referred to
+here are set in the Late Return & Damage Penalty Schedule.
+1. Our electric fleet
+Model
+Type
+Battery
+Typical range*
+Full charge (home
+socket)
+Ather 450X
+EV scooter
+3.7 kWh
+105 km
+5 h 40 min
+Ola S1 Pro
+EV scooter
+4.0 kWh
+115 km
+6 h 30 min
+TVS iQube
+EV scooter
+3.4 kWh
+95 km
+4 h 30 min
+Bajaj Chetak
+EV scooter
+3.2 kWh
+100 km
+4 h 50 min
+Revolt RV400
+EV bike
+3.24 kWh
+100 km
+4 h 30 min
+Oben Rorr
+EV bike
+4.4 kWh
+130 km
+2 h (fast)
+Ultraviolette F77
+EV bike
+7.1 kWh
+180 km
+5 h
+* Typical city range on a full battery. Actual range depends on speed, load, riding mode and traffic.
+2. Before you ride
+2.1 Check the battery level on the dashboard at pickup. Every EV leaves the hub with at least 80%
+charge.
+2.2 Plan your trip so that you return with enough charge. Riding in Eco mode gives the longest
+range.
+3. Charging
+3.1 You may charge at any RideWise hub or an approved public charger. Charging at a RideWise hub
+is free.
+ Figure 1: How to charge a RideWise EV.
+4. Returning the vehicle
+4.1 Return the EV to the same hub you picked it up from, with the battery level shown below in
+mind.
+
+--- Page 2 ---
+RW-POL-05  ·  v1.4
+RideWise Mobility Pvt. Ltd.  ·  Customer policy document
+Page 2
+ Figure 2: Battery level at return and the charging fee.
+5. Frequently asked questions
+Q. What happens if the battery runs out during my trip?
+Stop in a safe place and call RideWise Support on +91 80 4000 1234. A team from the nearest hub
+will bring a charged vehicle or tow the EV. Towing is free if the vehicle had a fault; otherwise a
+recovery charge may apply.
+Q. Can I charge the EV at home?
+Yes. Use only the RideWise charging cable supplied under the seat, with a properly earthed 15 A
+socket.
+Q. What if I return the EV with less than 10% battery?
+A flat low-battery charging fee applies, as set out in the Late Return & Damage Penalty Schedule.
+Q. Does a low-battery return also count as a late return?
+No. They are separate. If the EV is both late and below 10%, both fees apply.
+Q. Who pays for damage to the charging port or cable?
+Damage is assessed by hub staff and handled under the damage section of the Penalty Schedule.
+Q. My dashboard shows a battery warning light. What should I do?
+Stop riding, switch off the vehicle and call RideWise Support. Do not try to open the battery
+compartment.
