@@ -203,23 +203,34 @@ async function performLogin(payload) {
 function transitionToChatScreen() {
   const tl = gsap.timeline();
 
-  // Exit auth modal with scale down and fade
+  // Reset login buttons
+  const btnCust = document.getElementById("btnLoginCustomer");
+  const btnStaff = document.getElementById("btnLoginStaff");
+  if (btnCust) { btnCust.style.pointerEvents = "auto"; btnCust.style.opacity = "1"; }
+  if (btnStaff) { btnStaff.style.pointerEvents = "auto"; btnStaff.style.opacity = "1"; }
+
+  // Exit auth modal with fade
   tl.to(authScreen, {
     autoAlpha: 0,
-    duration: 0.4,
+    duration: 0.35,
     ease: "power2.in",
     onComplete: () => {
       authScreen.classList.add("hidden");
+      gsap.set(authScreen, { clearProps: "all" });
+
+      // Unhide chat screen and make sure its visibility/opacity are reset to 1
       mainChatScreen.classList.remove("hidden");
+      gsap.set(mainChatScreen, { autoAlpha: 1, clearProps: "opacity,visibility" });
+
       populateUserProfile();
       renderQuickPrompts();
       addAssistantMessage(currentSession.welcome_message, ["System Authenticator"]);
     }
   })
   // Enter Chat elements staggered
-  .fromTo(".sidebar", { x: -40, autoAlpha: 0 }, { x: 0, autoAlpha: 1, duration: 0.45, ease: "power3.out" })
-  .fromTo(".chat-header", { y: -20, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.35 }, "-=0.25")
-  .fromTo(".chat-input-bar", { y: 20, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.35 }, "-=0.25");
+  .fromTo(".sidebar", { x: -40, autoAlpha: 0 }, { x: 0, autoAlpha: 1, duration: 0.4, ease: "power3.out" })
+  .fromTo(".chat-header", { y: -20, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.3 }, "-=0.2")
+  .fromTo(".chat-input-bar", { y: 20, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.3 }, "-=0.2");
 }
 
 function populateUserProfile() {
@@ -438,12 +449,28 @@ function handleLogout() {
   const tl = gsap.timeline();
   tl.to(mainChatScreen, {
     autoAlpha: 0,
-    duration: 0.3,
+    duration: 0.25,
+    ease: "power2.in",
     onComplete: () => {
       mainChatScreen.classList.add("hidden");
+      // Clear inline style overrides set by GSAP animations
+      gsap.set(mainChatScreen, { clearProps: "all" });
+      gsap.set([".sidebar", ".chat-header", ".chat-input-bar", ".prompt-pill"], { clearProps: "all" });
+
       authScreen.classList.remove("hidden");
-      gsap.to(authScreen, { autoAlpha: 1, duration: 0.3 });
+      gsap.fromTo(authScreen, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.3, ease: "power2.out" });
+
+      // Reset login form fields and errors
+      loginError.classList.add("hidden");
+      loginError.textContent = "";
+
+      const btnCust = document.getElementById("btnLoginCustomer");
+      const btnStaff = document.getElementById("btnLoginStaff");
+      if (btnCust) { btnCust.style.pointerEvents = "auto"; btnCust.style.opacity = "1"; }
+      if (btnStaff) { btnStaff.style.pointerEvents = "auto"; btnStaff.style.opacity = "1"; }
+
       chatMessages.innerHTML = "";
+      messageInput.value = "";
       currentSession = null;
     }
   });
