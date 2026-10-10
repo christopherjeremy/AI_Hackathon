@@ -314,17 +314,16 @@ def synthesizer_node(state: RideWiseState) -> Dict[str, Any]:
     sql_ctx = state.get("sql_context") or {}
     policies = state.get("retrieved_policies") or []
     messages = state.get("messages", [])
+    last_user_msg = messages[-1]["content"] if messages else ""
     policy_ver = state.get("policy_version_applied")
 
     # Format DB context
     db_summary = json.dumps(sql_ctx, indent=2, default=str) if sql_ctx else "None"
 
-    # Format policy context and citations
+    # Format policy context
     policy_texts = []
-    citations = []
     for p in policies:
         policy_texts.append(f"[{p['doc_id']} {p['doc_title']} § {p['section']}]\n{p['content']}")
-        citations.append(p["citation"])
 
     formatted_policies = "\n\n".join(policy_texts) if policy_texts else "None"
 
@@ -391,31 +390,65 @@ def synthesizer_node(state: RideWiseState) -> Dict[str, Any]:
         completion = llm_client.chat_completion(messages=llm_messages, temperature=0.0)
         response_text = completion["content"]
 
-        # Gather relevant citations
-        if sql_ctx.get("booking"):
-            citations.append(f"DB: bookings.booking_id={sql_ctx['booking']['booking_id']}")
-        if sql_ctx.get("customer_profile"):
+        # Collect verified citations genuinely used or referenced in the response
+        final_citations = []
+        clean_resp = response_text.replace("‑", "-")  # normalize non-breaking hyphens
+
+        # Match policy documents actually referenced in response
+        for p in policies:
+            doc_id = p["doc_id"]
+            sec_num = p["section"].split(".")[0].strip()
+            if (doc_id in clean_resp) or (p["citation"] in clean_resp) or (f"{doc_id}" in clean_resp and f"§ {sec_num}" in clean_resp) or (f"§ {sec_num}" in clean_resp):
+                final_citations.append(p["citation"])
+
+        # Also extract any explicit markdown citations [RW-POL-XX ...] directly written by the model
+        explicit_cites = re.findall(r"\[(RW[\-‑]POL[\-‑][^\]]+)\]", response_text)
+        for ec in explicit_cites:
+            normalized_ec = f"[{ec.replace('‑', '-')}]"
+            matched = False
+            for p in policies:
+                if p["doc_id"] in normalized_ec:
+                    final_citations.append(p["citation"])
+                    matched = True
+                    break
+            if not matched:
+                final_citations.append(normalized_ec)
+
+        # Database citations: only include if the database entity was actively queried or discussed
+        if sql_ctx.get("booking") and ("booking" in last_user_msg.lower() or sql_ctx["booking"]["booking_id"] in clean_resp or "B-" in clean_resp):
+            final_citations.append(f"DB: bookings.booking_id={sql_ctx['booking']['booking_id']}")
+
+        if sql_ctx.get("customer_profile") and any(k in last_user_msg.lower() for k in ("profile", "account", "tier", "who am i", "kyc", "my details", "name", "phone", "email")):
             cid = sql_ctx["customer_profile"].get("customer_id") or user_id
-            citations.append(f"DB: customers.customer_id={cid}")
-        if sql_ctx.get("customer_recent_bookings"):
-            citations.append(f"DB: bookings.customer_id={user_id}")
-        if sql_ctx.get("fleet_summary"):
-            citations.append("DB: vehicles")
-        if sql_ctx.get("open_damage_claims"):
-            citations.append("DB: damage_reports")
+            final_citations.append(f"DB: customers.customer_id={cid}")
+
+        if sql_ctx.get("customer_recent_bookings") and any(k in last_user_msg.lower() for k in ("my booking", "my rides", "my trip", "show booking", "list booking", "recent rides", "all bookings")):
+            final_citations.append(f"DB: bookings.customer_id={user_id}")
+
+        if sql_ctx.get("fleet_summary") and any(k in last_user_msg.lower() for k in ("fleet", "hub", "availability", "available", "vehicles", "scooters", "bikes")):
+            final_citations.append("DB: vehicles")
+
+        if sql_ctx.get("open_damage_claims") and any(k in last_user_msg.lower() for k in ("damage", "claim", "claims", "repairs")):
+            final_citations.append("DB: damage_reports")
+
+        # Deduplicate while preserving order
+        deduped_citations = []
+        for c in final_citations:
+            if c not in deduped_citations:
+                deduped_citations.append(c)
 
         # Dynamically cache policy/FAQ responses for future semantic matches
-        if state.get("intent") == "policy_rag" and response_text:
+        if state.get("intent") == "policy_rag" and response_text and deduped_citations:
             semantic_cache.add_entry(
                 query=messages[-1]["content"],
                 answer=response_text,
-                citations=citations,
+                citations=deduped_citations,
                 role_scope="global"
             )
 
         return {
             "final_response": response_text,
-            "citations": list(set(citations))
+            "citations": deduped_citations
         }
 
     except Exception as e:
