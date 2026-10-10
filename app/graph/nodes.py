@@ -126,7 +126,7 @@ def router_node(state: RideWiseState) -> Dict[str, Any]:
     has_specific_db_target = bool(
         extracted_booking or extracted_customer or extracted_vehicle or extracted_hub or
         any(k in lower_msg for k in user_db_signals) or
-        (role == "support_agent" and any(k in lower_msg for k in ("fleet", "damage", "claim", "claims", "cust0", "customer", "customer wise", "penalties", "fines", "kyc", "kyc pending", "pending kyc")))
+        (role == "support_agent" and any(k in lower_msg for k in ("fleet", "damage", "claim", "claims", "cust0", "customer", "customer wise", "penalties", "fines", "kyc")))
     )
 
     policy_keywords = (
@@ -140,9 +140,10 @@ def router_node(state: RideWiseState) -> Dict[str, Any]:
     general_db_keywords = (
         "fleet", "hub", "availability", "available", "damage", "claims",
         "customer wise", "all penalties", "penalties summary", "top penalties",
-        "kyc pending", "pending kyc", "kyc rejected", "kyc verified"
+        "kyc pending", "pending kyc", "kyc reject", "reject kyc", "rejected kyc", "kyc status"
     )
     has_general_db = any(k in lower_msg for k in general_db_keywords)
+
 
 
     if is_greeting and not (has_specific_db_target or has_policy_kw or has_general_db):
@@ -332,10 +333,11 @@ def db_execution_node(state: RideWiseState) -> Dict[str, Any]:
         # 9. Support Agent KYC Status Queries (Pending / Rejected)
         if any(k in lower_msg for k in ("kyc pending", "pending kyc", "kyc verification pending", "unverified kyc", "unverified customers")):
             sql_context["kyc_pending_customers"] = get_customers_by_kyc_status("PENDING", mask_pii=True, limit=20)
-        elif any(k in lower_msg for k in ("kyc rejected", "rejected kyc", "failed kyc")):
+        elif any(k in lower_msg for k in ("kyc reject", "reject customer", "rejected customer", "kyc rejected", "rejected kyc", "failed kyc", "reject list", "rejection list")) or ("kyc" in lower_msg and "reject" in lower_msg):
             sql_context["kyc_rejected_customers"] = get_customers_by_kyc_status("REJECTED", mask_pii=True, limit=20)
 
     return {"sql_context": sql_context}
+
 
 
 
