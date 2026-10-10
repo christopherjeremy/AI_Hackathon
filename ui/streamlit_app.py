@@ -36,18 +36,20 @@ if "user_identifier" not in st.session_state:
 if "customer_profile" not in st.session_state:
     st.session_state.customer_profile = None
 
-# Sidebar
+# Sidebar - Compact No-Scroll Layout
 with st.sidebar:
-    st.title("⚡ RideWise Assist")
-    st.caption("AI Assistant • NeoStats Hackathon")
+    st.subheader("⚡ RideWise Assist")
+    st.caption("NeoStats AI Engineer Hackathon")
 
     role_choice = st.radio(
-        "Select User Role:",
-        ["Customer Self-Service", "Support Staff / Operations"],
-        index=0 if st.session_state.role == "customer" else 1
+        "Role:",
+        ["Customer", "Support Staff"],
+        horizontal=True,
+        index=0 if st.session_state.role == "customer" else 1,
+        label_visibility="collapsed"
     )
 
-    new_role = "customer" if role_choice == "Customer Self-Service" else "support_agent"
+    new_role = "customer" if role_choice == "Customer" else "support_agent"
     if new_role != st.session_state.role:
         st.session_state.role = new_role
         st.session_state.is_authenticated = False
@@ -56,12 +58,14 @@ with st.sidebar:
         st.session_state.messages = []
         st.rerun()
 
-    if st.session_state.role == "customer":
-        cust_id_input = st.text_input("Customer ID:", placeholder="e.g. CUST0001", value="CUST0001")
-        if st.button("Authenticate Customer"):
-            if not cust_id_input.strip():
-                st.error("Please enter a valid Customer ID.")
-            else:
+    if not st.session_state.is_authenticated:
+        if st.session_state.role == "customer":
+            col_in, col_btn = st.columns([3, 2])
+            with col_in:
+                cust_id_input = st.text_input("Customer ID", value="CUST0001", label_visibility="collapsed", placeholder="CUST0001")
+            with col_btn:
+                auth_clicked = st.button("Log In", use_container_width=True)
+            if auth_clicked:
                 cust = get_customer_by_id(cust_id_input.strip().upper())
                 if cust:
                     st.session_state.is_authenticated = True
@@ -73,59 +77,49 @@ with st.sidebar:
                     }]
                     st.rerun()
                 else:
-                    st.error(f"Customer ID '{cust_id_input}' not found. Please try CUST0001 to CUST0200.")
-    else:
-        staff_name_input = st.text_input("Staff Name:", placeholder="e.g. Ananya Rao", value="Ananya Rao")
-        if st.button("Set Staff Operator"):
-            if not staff_name_input.strip():
-                st.error("Please enter your name.")
-            else:
+                    st.error("ID not found (Try CUST0001 - CUST0200)")
+        else:
+            col_in, col_btn = st.columns([3, 2])
+            with col_in:
+                staff_name_input = st.text_input("Staff Name", value="Ananya Rao", label_visibility="collapsed", placeholder="Name")
+            with col_btn:
+                staff_clicked = st.button("Log In", use_container_width=True)
+            if staff_clicked:
                 st.session_state.is_authenticated = True
                 st.session_state.user_identifier = staff_name_input.strip()
                 st.session_state.customer_profile = None
                 st.session_state.messages = [{
                     "role": "assistant",
-                    "content": f"Welcome Operator **{staff_name_input.strip()}**. Global fleet & operational scope enabled."
+                    "content": f"Welcome Operator **{staff_name_input.strip()}**. Global fleet scope enabled."
                 }]
                 st.rerun()
-
-    st.divider()
-    
-    # Active user status
-    if not st.session_state.is_authenticated:
-        st.warning("⚠️ Unauthenticated")
-        st.caption("Please click Authenticate above to initialize your session.")
-    elif st.session_state.role == "customer" and st.session_state.customer_profile:
-        p = st.session_state.customer_profile
-        st.success("🟢 Authenticated")
-        st.markdown(f"**Customer ID:** `{p['customer_id']}`")
-        st.markdown(f"**Customer:** {p['full_name']}")
-        st.markdown(f"**Tier:** `{p['customer_tier']}`")
-        st.markdown(f"**KYC:** `{p['kyc_status']}`")
     else:
-        st.success("🟢 Authenticated")
-        st.markdown(f"**Agent:** {st.session_state.user_identifier}")
-        st.markdown("**Scope:** `Global Fleet & All Hubs`")
+        # Compact Session Info
+        if st.session_state.role == "customer" and st.session_state.customer_profile:
+            p = st.session_state.customer_profile
+            st.info(f"👤 **{p['full_name']}** (`{p['customer_id']}`)\n\nTier: **{p['customer_tier']}** | KYC: **{p['kyc_status']}**")
+        else:
+            st.info(f"🎧 Operator **{st.session_state.user_identifier}**\n\nScope: **Global Fleet & All Hubs**")
 
-    st.divider()
-
-    if st.button("🔄 Reset Conversation"):
-        st.session_state.messages = []
-        st.session_state.session_id = str(uuid.uuid4())
-        st.rerun()
-
-    if st.session_state.is_authenticated and st.button("🚪 Logout"):
-        st.session_state.is_authenticated = False
-        st.session_state.user_identifier = None
-        st.session_state.customer_profile = None
-        st.session_state.messages = []
-        st.session_state.session_id = str(uuid.uuid4())
-        st.rerun()
-
+        # Action Buttons in a single row
+        col_reset, col_logout = st.columns(2)
+        with col_reset:
+            if st.button("🔄 Reset", use_container_width=True):
+                st.session_state.messages = []
+                st.session_state.session_id = str(uuid.uuid4())
+                st.rerun()
+        with col_logout:
+            if st.button("🚪 Logout", use_container_width=True):
+                st.session_state.is_authenticated = False
+                st.session_state.user_identifier = None
+                st.session_state.customer_profile = None
+                st.session_state.messages = []
+                st.session_state.session_id = str(uuid.uuid4())
+                st.rerun()
 
 # Main Chat Display
-st.header("RideWise Conversational Operations Desk")
-st.caption("Grounded on `ridewise.db` (Read-Only) & 5 Official Policy Documents")
+st.subheader("RideWise Conversational Operations Desk")
+
 
 # Display message history
 for msg in st.session_state.messages:
