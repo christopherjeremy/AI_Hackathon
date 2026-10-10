@@ -50,7 +50,7 @@ class LLMClient:
         self,
         messages: List[Dict[str, str]],
         temperature: float = 0.0,
-        max_tokens: int = 1000
+        max_tokens: int = 2500
     ) -> Dict[str, Any]:
         """
         Calls Azure OpenAI chat completion with exponential backoff retry.
@@ -65,11 +65,17 @@ class LLMClient:
             choice = response.choices[0]
             content = choice.message.content or ""
             reasoning = getattr(choice.message, "reasoning_content", None)
+
+            # If model returned reasoning but empty content due to token boundary, use reasoning as answer
+            if not content.strip() and reasoning and reasoning.strip():
+                content = reasoning.strip()
+
             return {
                 "content": content,
                 "reasoning": reasoning,
                 "finish_reason": choice.finish_reason
             }
+
         except RateLimitError as e:
             logger.warning(f"Azure OpenAI Rate Limit encountered: {e}. Retrying with backoff...")
             raise
