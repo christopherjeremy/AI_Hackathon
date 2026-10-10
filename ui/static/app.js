@@ -224,15 +224,23 @@ async function performLogin(payload) {
 // TRANSITION TO COCKPIT (GSAP DUAL-PANE REVEAL)
 // =========================================================
 function transitionToCockpit() {
+  // Re-enable login buttons
+  const btnCust = document.getElementById("btnLoginCustomer");
+  const btnStaff = document.getElementById("btnLoginStaff");
+  if (btnCust) { btnCust.style.pointerEvents = "auto"; btnCust.style.opacity = "1"; }
+  if (btnStaff) { btnStaff.style.pointerEvents = "auto"; btnStaff.style.opacity = "1"; }
+
   const tl = gsap.timeline();
 
   tl.to(authScreen, {
     autoAlpha: 0,
-    duration: 0.35,
+    duration: 0.3,
     ease: "power2.in",
     onComplete: () => {
       authScreen.classList.add("hidden");
       mainChatScreen.classList.remove("hidden");
+      // Explicitly reset autoAlpha and clear opacity/visibility on container
+      gsap.set(mainChatScreen, { autoAlpha: 1, clearProps: "opacity,visibility" });
       populateHeaderUser();
       populateQuickInquiries();
       addAssistantMessage(currentSession.welcome_message, ["System Authenticator"]);
@@ -452,16 +460,24 @@ async function handleResetConversation() {
 }
 
 function handleLogout() {
+  const btnCust = document.getElementById("btnLoginCustomer");
+  const btnStaff = document.getElementById("btnLoginStaff");
+  if (btnCust) { btnCust.style.pointerEvents = "auto"; btnCust.style.opacity = "1"; }
+  if (btnStaff) { btnStaff.style.pointerEvents = "auto"; btnStaff.style.opacity = "1"; }
+
   const tl = gsap.timeline();
   tl.to(mainChatScreen, {
     autoAlpha: 0,
     duration: 0.25,
     onComplete: () => {
       mainChatScreen.classList.add("hidden");
+      gsap.set(mainChatScreen, { clearProps: "all" });
       authScreen.classList.remove("hidden");
-      gsap.to(authScreen, { autoAlpha: 1, duration: 0.25 });
+      gsap.set(authScreen, { autoAlpha: 1, clearProps: "opacity,visibility" });
+      gsap.fromTo(".auth-card", { scale: 0.94, autoAlpha: 0, y: 15 }, { scale: 1, autoAlpha: 1, y: 0, duration: 0.35, ease: "power3.out" });
       chatMessages.innerHTML = "";
       currentSession = null;
     }
   });
 }
+
