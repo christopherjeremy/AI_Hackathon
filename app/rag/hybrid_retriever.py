@@ -11,6 +11,14 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from app.rag.knowledge_base import POLICY_CHUNKS
 
+from sklearn.feature_extraction import text
+
+# Conversational stop words and standard English stopwords to avoid spurious matches
+STOP_WORDS = set(text.ENGLISH_STOP_WORDS).union({
+    "want", "tell", "show", "please", "need", "give", "can", "let", "know",
+    "would", "like", "able", "way", "help", "thank", "thanks", "hello", "hi"
+})
+
 class HybridPolicyRetriever:
     def __init__(self, chunks: List[Dict[str, Any]] = None):
         self.chunks = chunks or POLICY_CHUNKS
@@ -21,7 +29,7 @@ class HybridPolicyRetriever:
             for c in self.chunks
         ]
         
-        # Initialize BM25
+        # Initialize BM25 with stop words removed
         tokenized_corpus = [self._tokenize(text) for text in self.corpus_texts]
         self.bm25 = BM25Okapi(tokenized_corpus)
         
@@ -30,14 +38,15 @@ class HybridPolicyRetriever:
             ngram_range=(1, 3),
             sublinear_tf=True,
             token_pattern=r"(?u)\b[\w\.\%₹\-]+\b",
-            lowercase=True
+            lowercase=True,
+            stop_words="english"
         )
         self.tfidf_matrix = self.vectorizer.fit_transform(self.corpus_texts)
 
     def _tokenize(self, text: str) -> List[str]:
         # Lowercase and split on non-alphanumeric except ₹, %, -
         cleaned = re.sub(r"[^\w\s₹\%\.\-]", " ", text.lower())
-        return [w for w in cleaned.split() if len(w) > 1]
+        return [w for w in cleaned.split() if len(w) > 1 and w not in STOP_WORDS]
 
     def retrieve(
         self,
@@ -77,35 +86,44 @@ class HybridPolicyRetriever:
         query_vec = self.vectorizer.transform([query])
         semantic_scores = cosine_similarity(query_vec, self.tfidf_matrix).flatten()
 
-        # 3. Reciprocal Rank Fusion (RRF)
-        # Sort indices by BM25
-        bm25_ranked = np.argsort(bm25_scores)[::-1]
-        bm25_ranks = {idx: rank + 1 for rank, idx in enumerate(bm25_ranked)}
+        # 3. Reciprocal Rank Fusion (RRF) with strict relevance gating
+        # Only rank chunks that have meaningful signal:
+        # - BM25: score > 0.5
+        # - Semantic: cosine similarity >= 0.12
+        bm25_hits = [(score, idx) for idx, score in enumerate(bm25_scores) if score > 0.5]
+        bm25_hits.sort(key=lambda x: x[0], reverse=True)
+        bm25_ranks = {idx: rank + 1 for rank, (score, idx) in enumerate(bm25_hits)}
 
-        # Sort indices by Semantic
-        semantic_ranked = np.argsort(semantic_scores)[::-1]
-        semantic_ranks = {idx: rank + 1 for rank, idx in enumerate(semantic_ranked)}
+        sem_hits = [(score, idx) for idx, score in enumerate(semantic_scores) if score >= 0.12]
+        sem_hits.sort(key=lambda x: x[0], reverse=True)
+        sem_ranks = {idx: rank + 1 for rank, (score, idx) in enumerate(sem_hits)}
 
         rrf_scores = []
         for i, chunk in enumerate(self.chunks):
             # Check temporal policy filter
             doc_id = chunk["doc_id"]
             if target_v1 and doc_id == "RW-POL-03":
-                # Demote or skip v2 when booking is strictly under v1
-                score = 0.0
+                continue
             elif target_v2 and doc_id == "RW-POL-02":
-                # Demote or skip v1 when booking is strictly under v2
-                score = 0.0
-            else:
-                r_bm25 = bm25_ranks[i]
-                r_sem = semantic_ranks[i]
-                # Standard RRF formula with k=60
-                score = (1.0 / (60 + r_bm25)) + (1.0 / (60 + r_sem))
-                
-                # Bonus if exact doc_id or vehicle model matches
-                if doc_id.lower() in query.lower():
-                    score += 0.05
-            
+                continue
+
+            r_bm25 = bm25_ranks.get(i)
+            r_sem = sem_ranks.get(i)
+
+            # Skip chunk entirely if it didn't pass BM25 or semantic relevance threshold
+            if r_bm25 is None and r_sem is None:
+                continue
+
+            score = 0.0
+            if r_bm25 is not None:
+                score += 1.0 / (60 + r_bm25)
+            if r_sem is not None:
+                score += 1.0 / (60 + r_sem)
+
+            # Bonus if exact doc_id matches query
+            if doc_id.lower() in query.lower():
+                score += 0.05
+
             rrf_scores.append((score, i))
 
         # Sort by final RRF score
