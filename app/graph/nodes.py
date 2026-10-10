@@ -263,7 +263,7 @@ def rag_retrieval_node(state: RideWiseState) -> Dict[str, Any]:
         return {}
 
     intent = state.get("intent")
-    if intent == "greeting":
+    if intent in ("greeting", "db_query"):
         return {
             "retrieved_policies": [],
             "policy_version_applied": None
@@ -479,10 +479,7 @@ def verifier_node(state: RideWiseState) -> Dict[str, Any]:
         else:
             filtered_citations.append(c)
 
-    # Fallback to keep at least 1 citation if raw had any
-    if not filtered_citations and raw_citations:
-        filtered_citations = [raw_citations[0]]
-
+    # If the query was purely DB or greeting, do not force-keep spurious policy citations
     return {
         "final_response": final_resp,
         "citations": list(dict.fromkeys(filtered_citations))
