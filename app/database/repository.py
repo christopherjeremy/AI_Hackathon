@@ -231,6 +231,32 @@ def get_vehicle_by_id(vehicle_id: str) -> Optional[Dict[str, Any]]:
     finally:
         conn.close()
 
+def get_all_customer_penalties_summary(limit: int = 15) -> List[Dict[str, Any]]:
+    """Aggregate all penalties and fines customer-wise across the fleet (Support Agent only)."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT 
+                b.customer_id,
+                c.full_name,
+                c.customer_tier,
+                COUNT(p.payment_id) AS penalty_count,
+                SUM(p.amount) AS total_penalty_ex_gst,
+                SUM(COALESCE(p.gst_amount, 0)) AS total_gst,
+                SUM(p.amount + COALESCE(p.gst_amount, 0)) AS total_charged
+            FROM payments p
+            JOIN bookings b ON p.booking_id = b.booking_id
+            JOIN customers c ON b.customer_id = c.customer_id
+            WHERE p.payment_type = 'PENALTY'
+            GROUP BY b.customer_id, c.full_name, c.customer_tier
+            ORDER BY total_charged DESC
+            LIMIT ?
+        """, (limit,))
+        return [dict(r) for r in cursor.fetchall()]
+    finally:
+        conn.close()
+
 def get_fleet_summary(hub_name: Optional[str] = None) -> List[Dict[str, Any]]:
     """Fetch vehicle availability summary across hubs."""
     conn = get_db_connection()
@@ -248,6 +274,7 @@ def get_fleet_summary(hub_name: Optional[str] = None) -> List[Dict[str, Any]]:
                 SELECT hub_name, vehicle_type, status, count(*) AS count
                 FROM vehicles
                 GROUP BY hub_name, vehicle_type, status
+
                 ORDER BY hub_name, vehicle_type
             """)
         return [dict(r) for r in cursor.fetchall()]
