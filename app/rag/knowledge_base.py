@@ -98,6 +98,21 @@ POLICY_CHUNKS: List[Dict[str, Any]] = [
         )
     },
 
+    {
+        "doc_id": "RW-POL-01",
+        "doc_title": "Rental Agreement & Terms",
+        "version": "3.0",
+        "effective_date": "2025-01-01",
+        "section": "9. Contact & Account Support",
+        "keywords": ["contact", "support", "help", "email", "phone", "profile", "change details", "update phone", "update email", "modify account", "customer support"],
+        "content": (
+            "Document RW-POL-01 (Version 3.0). Section 9: Contact. "
+            "RideWise Support: support@ridewise.example • +91 80 4000 1234 (7:00 AM to 11:00 PM IST, every day). "
+            "Customer accounts and registered contact information (phone, email, KYC) cannot be modified directly via self-service chat. "
+            "Customers must contact RideWise Support directly for any profile or contact detail changes."
+        )
+    },
+
     # ------------------ RW-POL-02: Cancellation Policy v1 ------------------
     {
         "doc_id": "RW-POL-02",
