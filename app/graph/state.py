@@ -23,6 +23,8 @@ class RideWiseState(TypedDict):
     extracted_vehicle_id: Optional[str]
     extracted_hub_name: Optional[str]
     extracted_customer_id: Optional[str]
+    generated_sql: Optional[str]
+
     
     # Tool Execution Context
     sql_context: Optional[Dict[str, Any]]
