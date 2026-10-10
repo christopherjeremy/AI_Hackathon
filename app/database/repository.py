@@ -257,6 +257,30 @@ def get_all_customer_penalties_summary(limit: int = 15) -> List[Dict[str, Any]]:
     finally:
         conn.close()
 
+def get_customers_by_kyc_status(kyc_status: str = "PENDING", mask_pii: bool = True, limit: int = 25) -> List[Dict[str, Any]]:
+    """Fetch customers by KYC verification status (Support Agent only)."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT customer_id, full_name, phone, email, city, kyc_status, customer_tier, created_at
+            FROM customers
+            WHERE UPPER(kyc_status) = ?
+            ORDER BY created_at DESC
+            LIMIT ?
+        """, (kyc_status.strip().upper(), limit))
+        rows = cursor.fetchall()
+        results = []
+        for r in rows:
+            d = dict(r)
+            if mask_pii:
+                d = mask_customer_pii(d)
+            results.append(d)
+        return results
+    finally:
+        conn.close()
+
+
 def get_fleet_summary(hub_name: Optional[str] = None) -> List[Dict[str, Any]]:
     """Fetch vehicle availability summary across hubs."""
     conn = get_db_connection()
