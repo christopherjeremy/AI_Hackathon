@@ -1,0 +1,115 @@
+DOC_ID: RW-POL-01
+TITLE: Rental Agreement & Terms
+VERSION: 3.0
+EFFECTIVE: 2025-01-01
+
+
+--- Page 1 ---
+RW-POL-01  ·  v3.0
+RideWise Mobility Pvt. Ltd.  ·  Customer policy document
+Page 1
+Rental Agreement & Terms
+Document RW-POL-01 · Version 3.0 · Effective 1 January 2025 · Applies to all rentals
+This agreement sets out the terms on which RideWise Mobility Pvt. Ltd. ("RideWise") rents bikes,
+scooters and electric vehicles to customers. By confirming a booking in the RideWise app, the
+customer accepts these terms, together with the Cancellation & Refund Policy, the Late Return &
+Damage Penalty Schedule and the EV User Guide.
+1. Eligibility
+1.1 The customer must be at least 18 years old and hold a valid driving licence for the class of
+vehicle booked.
+1.2 Each customer may hold one RideWise account, registered with a mobile number and email
+address.
+2. KYC verification
+2.1 Every account goes through KYC (Know Your Customer) verification of the driving licence and
+identity. An account has one of three KYC statuses:
+KYC status
+What the customer can do
+VERIFIED
+Book and pick up any vehicle.
+PENDING
+Book in advance, but the vehicle is released only after KYC is verified.
+REJECTED
+Cannot rent. Any existing booking is cancelled by RideWise.
+2.2 If KYC is still pending at the scheduled pickup time, or is rejected, RideWise cancels the booking.
+A booking cancelled by RideWise is always refunded in full (see the Cancellation & Refund Policy).
+3. Hubs, pickup and return
+3.1 Vehicles are picked up from and returned to the same RideWise hub. RideWise operates seven
+hubs, all in Bengaluru: Koramangala, Indiranagar, Jayanagar, HSR Layout, Electronic City, Whitefield
+and Hebbal.
+3.2 The rental period runs from the scheduled pickup time to the scheduled return time shown in the
+booking. Rentals are booked in whole hours, with a minimum of 2 hours.
+3.3 A return after the scheduled return time is a late return and is charged under the Late Return &
+Damage Penalty Schedule.
+4. Rental charges
+4.1 Each vehicle has an hourly rate and a daily rate (per 24 hours). The rental charge is always the
+cheaper combination for the booked duration:
+• every full 24-hour block is charged at the daily rate; and
+• the remaining hours are charged at the hourly rate, but never more than one daily rate.
+4.2 Worked examples (vehicle with an hourly rate of ₹80 and a daily rate of
+₹700):
+Booked duration
+Calculation
+Rental charge
+4 hours
+4 × ₹80
+₹320
+
+--- Page 2 ---
+RW-POL-01  ·  v3.0
+RideWise Mobility Pvt. Ltd.  ·  Customer policy document
+Page 2
+Booked duration
+Calculation
+Rental charge
+10 hours
+10 × ₹80 = ₹800, capped at one daily rate
+₹700
+24 hours
+1 × ₹700
+₹700
+27 hours
+1 × ₹700 + 3 × ₹80
+₹940
+4.3 GST at 18% is added to rental charges, penalties and fees. When a refund is issued, the GST on
+the refunded amount is refunded in the same proportion.
+4.4 The full rental charge is paid when the booking is made. Payment may be completed in more
+than one instalment before pickup. A failed payment attempt is not a payment and is never charged.
+5. Security deposit
+5.1 A refundable security deposit may be collected when the booking is made:
+Vehicle type
+When a deposit may be collected
+Deposit
+Bike / EV bike
+Any rental
+₹1,000
+Scooter / EV scooter
+Rentals of 24 hours or more
+₹500
+5.2 The deposit is not a rental charge, carries no GST, and is returned to the original payment
+method within 3 working days of the vehicle's return. Unpaid penalties may be recovered from it.
+5.3 Deposit returns are processed directly by the payment gateway and are not shown in RideWise
+booking or payment records.
+6. Customer tiers
+6.1 Customers are placed in one of three tiers (STANDARD, SILVER or GOLD) based on their rental
+history. Tier benefits, including any grace period on late returns, are set out in Annexure A of the
+Late Return & Damage Penalty Schedule.
+7. No-shows
+7.1 A booking is a no-show when the customer neither picks up the vehicle within 60 minutes of the
+scheduled pickup time nor cancels the booking before the scheduled pickup time.
+7.2 The rental charge for a no-show is not refunded. No additional fee is charged for a no-show.
+8. Customer responsibilities
+8.1 The customer must ride safely, follow traffic laws, wear a helmet and not lend the vehicle to
+anyone else.
+8.2 The customer is responsible for traffic fines incurred during the rental period.
+8.3 Damage found at return is assessed by hub staff and charged under the Late Return & Damage
+Penalty Schedule.
+
+--- Page 3 ---
+RW-POL-01  ·  v3.0
+RideWise Mobility Pvt. Ltd.  ·  Customer policy document
+Page 3
+9. Contact
+RideWise Support: support@ridewise.example · +91 80 4000 1234 (7:00 AM to 11:00 PM IST, every
+day).
+Authorised signatory
+Head of Customer Operations, RideWise Mobility Pvt. Ltd.
