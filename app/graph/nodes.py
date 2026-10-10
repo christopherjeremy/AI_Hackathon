@@ -17,6 +17,7 @@ from app.database.repository import (
     get_vehicle_by_id,
     get_fleet_summary,
     get_open_damage_claims,
+    search_customers_by_name,
     STATUS_CODE_MAP
 )
 from app.rag.hybrid_retriever import retriever
@@ -273,16 +274,38 @@ def db_execution_node(state: RideWiseState) -> Dict[str, Any]:
         claims = get_open_damage_claims()
         sql_context["open_damage_claims"] = claims[:10]
 
-    # 7. Support Agent Customer Lookup (with strict PII masking)
-    if role == "support_agent" and customer_id_target:
-        cust_info = get_customer_by_id(customer_id_target, mask_pii=True)
-        if cust_info:
-            sql_context["queried_customer"] = cust_info
-            sql_context["queried_customer_bookings"] = get_customer_bookings(customer_id_target, limit=5)
-        else:
-            sql_context["customer_not_found"] = f"Customer `{customer_id_target}` was not found in the RideWise database."
+    # 7. Support Agent Customer Lookup (by ID or Name, with strict PII masking)
+    if role == "support_agent":
+        if customer_id_target:
+            cust_info = get_customer_by_id(customer_id_target, mask_pii=True)
+            if cust_info:
+                sql_context["queried_customer"] = cust_info
+                sql_context["queried_customer_bookings"] = get_customer_bookings(customer_id_target, limit=5)
+            else:
+                sql_context["customer_not_found"] = f"Customer `{customer_id_target}` was not found in the RideWise database."
+        elif any(k in lower_msg for k in ("customer", "user", "client", "member", "account", "profile")):
+            # Check if an actual customer name from database is mentioned in query
+            name_candidates = re.findall(r"\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\b", last_user_msg)
+            found_custs = []
+            for cand in name_candidates:
+                if cand.lower() in ("ridewise", "bangalore", "bengaluru", "ather", "ola", "tvs", "bounce", "support", "staff", "agent", "hello", "gold", "silver", "standard"):
+                    continue
+                matches = search_customers_by_name(cand, mask_pii=True, limit=3)
+                if matches:
+                    found_custs.extend(matches)
+                    break
+            
+            if found_custs:
+                sql_context["queried_customer"] = found_custs[0]
+                sql_context["queried_customer_bookings"] = get_customer_bookings(found_custs[0]["customer_id"], limit=5)
+                if len(found_custs) > 1:
+                    sql_context["multiple_customer_matches"] = [
+                        {"customer_id": c["customer_id"], "full_name": c["full_name"], "tier": c["customer_tier"]}
+                        for c in found_custs
+                    ]
 
     return {"sql_context": sql_context}
+
 
 
 def rag_retrieval_node(state: RideWiseState) -> Dict[str, Any]:
