@@ -123,6 +123,37 @@ def get_customer_bookings(customer_id: str, limit: int = 10) -> List[Dict[str, A
     finally:
         conn.close()
 
+def get_customer_penalties(customer_id: str, limit: int = 10) -> List[Dict[str, Any]]:
+
+    """Fetch all penalties and fines charged to a customer across their bookings."""
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT 
+                p.payment_id,
+                p.booking_id,
+                p.payment_type,
+                p.amount,
+                p.gst_amount,
+                (p.amount + COALESCE(p.gst_amount, 0)) AS total_charged,
+                p.payment_status,
+                p.remarks,
+                p.paid_at,
+                b.vehicle_id,
+                v.model AS vehicle_model
+            FROM payments p
+            JOIN bookings b ON p.booking_id = b.booking_id
+            LEFT JOIN vehicles v ON b.vehicle_id = v.vehicle_id
+            WHERE b.customer_id = ? AND p.payment_type = 'PENALTY'
+            ORDER BY p.paid_at DESC
+            LIMIT ?
+        """, (customer_id.strip().upper(), limit))
+        return [dict(r) for r in cursor.fetchall()]
+    finally:
+        conn.close()
+
+
 def get_booking_details(booking_id: str, customer_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """
     Fetch comprehensive details of a booking including payments and damage reports.
