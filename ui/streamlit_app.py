@@ -29,10 +29,12 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "role" not in st.session_state:
     st.session_state.role = "customer"
+if "is_authenticated" not in st.session_state:
+    st.session_state.is_authenticated = False
 if "user_identifier" not in st.session_state:
-    st.session_state.user_identifier = "CUST0001"
+    st.session_state.user_identifier = None
 if "customer_profile" not in st.session_state:
-    st.session_state.customer_profile = get_customer_by_id("CUST0001")
+    st.session_state.customer_profile = None
 
 # Sidebar
 with st.sidebar:
@@ -45,42 +47,63 @@ with st.sidebar:
         index=0 if st.session_state.role == "customer" else 1
     )
 
-    if role_choice == "Customer Self-Service":
-        st.session_state.role = "customer"
-        cust_id_input = st.text_input("Customer ID:", value="CUST0001")
+    new_role = "customer" if role_choice == "Customer Self-Service" else "support_agent"
+    if new_role != st.session_state.role:
+        st.session_state.role = new_role
+        st.session_state.is_authenticated = False
+        st.session_state.user_identifier = None
+        st.session_state.customer_profile = None
+        st.session_state.messages = []
+        st.rerun()
+
+    if st.session_state.role == "customer":
+        cust_id_input = st.text_input("Customer ID:", placeholder="e.g. CUST0001", value="CUST0001")
         if st.button("Authenticate Customer"):
-            cust = get_customer_by_id(cust_id_input)
-            if cust:
-                st.session_state.user_identifier = cust_id_input.upper()
-                st.session_state.customer_profile = cust
+            if not cust_id_input.strip():
+                st.error("Please enter a valid Customer ID.")
+            else:
+                cust = get_customer_by_id(cust_id_input.strip().upper())
+                if cust:
+                    st.session_state.is_authenticated = True
+                    st.session_state.user_identifier = cust_id_input.strip().upper()
+                    st.session_state.customer_profile = cust
+                    st.session_state.messages = [{
+                        "role": "assistant",
+                        "content": f"Hello **{cust['full_name']}**! Authenticated as **{cust['customer_tier']}** tier member."
+                    }]
+                    st.rerun()
+                else:
+                    st.error(f"Customer ID '{cust_id_input}' not found. Please try CUST0001 to CUST0200.")
+    else:
+        staff_name_input = st.text_input("Staff Name:", placeholder="e.g. Ananya Rao", value="Ananya Rao")
+        if st.button("Set Staff Operator"):
+            if not staff_name_input.strip():
+                st.error("Please enter your name.")
+            else:
+                st.session_state.is_authenticated = True
+                st.session_state.user_identifier = staff_name_input.strip()
+                st.session_state.customer_profile = None
                 st.session_state.messages = [{
                     "role": "assistant",
-                    "content": f"Hello **{cust['full_name']}**! Authenticated as **{cust['customer_tier']}** tier member."
+                    "content": f"Welcome Operator **{staff_name_input.strip()}**. Global fleet & operational scope enabled."
                 }]
-                st.success(f"Logged in as {cust['full_name']}")
-            else:
-                st.error("Customer ID not found (Try CUST0001 to CUST0200)")
-    else:
-        st.session_state.role = "support_agent"
-        staff_name_input = st.text_input("Staff Name:", value="Ananya Rao")
-        if st.button("Set Staff Operator"):
-            st.session_state.user_identifier = staff_name_input
-            st.session_state.customer_profile = None
-            st.session_state.messages = [{
-                "role": "assistant",
-                "content": f"Welcome Operator **{staff_name_input}**. Full fleet & operational scope enabled."
-            }]
-            st.success(f"Authenticated as {staff_name_input}")
+                st.rerun()
 
     st.divider()
     
     # Active user status
-    if st.session_state.role == "customer" and st.session_state.customer_profile:
+    if not st.session_state.is_authenticated:
+        st.warning("⚠️ Unauthenticated")
+        st.caption("Please click Authenticate above to initialize your session.")
+    elif st.session_state.role == "customer" and st.session_state.customer_profile:
         p = st.session_state.customer_profile
+        st.success("🟢 Authenticated")
+        st.markdown(f"**Customer ID:** `{p['customer_id']}`")
         st.markdown(f"**Customer:** {p['full_name']}")
         st.markdown(f"**Tier:** `{p['customer_tier']}`")
         st.markdown(f"**KYC:** `{p['kyc_status']}`")
     else:
+        st.success("🟢 Authenticated")
         st.markdown(f"**Agent:** {st.session_state.user_identifier}")
         st.markdown("**Scope:** `Global Fleet & All Hubs`")
 
@@ -90,6 +113,15 @@ with st.sidebar:
         st.session_state.messages = []
         st.session_state.session_id = str(uuid.uuid4())
         st.rerun()
+
+    if st.session_state.is_authenticated and st.button("🚪 Logout"):
+        st.session_state.is_authenticated = False
+        st.session_state.user_identifier = None
+        st.session_state.customer_profile = None
+        st.session_state.messages = []
+        st.session_state.session_id = str(uuid.uuid4())
+        st.rerun()
+
 
 # Main Chat Display
 st.header("RideWise Conversational Operations Desk")
@@ -105,12 +137,18 @@ for msg in st.session_state.messages:
                     st.code(c)
 
 # Chat Input
-user_input = st.chat_input("Ask a question about bookings, refunds, penalties, EV guide...")
+if not st.session_state.is_authenticated:
+    st.info("👈 Please authenticate in the sidebar with your Customer ID or Staff credentials to start chatting.")
+    user_input = None
+else:
+    user_input = st.chat_input("Ask a question about bookings, refunds, penalties, EV guide...")
+
 if user_input:
     # Append user message
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
+
 
     # Process through LangGraph
     graph_input = {
