@@ -37,6 +37,36 @@ BANGALORE_HUBS = [
 ]
 
 
+def extract_customer_id(text: str) -> Optional[str]:
+    """
+    Extracts and normalizes customer IDs.
+    Handles 'CUST0001', 'CUST001', 'cust1', 'customer 1', 'CUST-0001'.
+    Normalizes to 4-digit zero-padded format: e.g., 'CUST0001'.
+    """
+    if not text:
+        return None
+    m = re.search(r"\b(?:CUST|CUSTOMER)[-_]?\s*(\d{1,4})\b", text, re.IGNORECASE)
+    if m:
+        num = m.group(1)
+        return f"CUST{num.zfill(4)}"
+    return None
+
+
+def extract_booking_id(text: str) -> Optional[str]:
+    """
+    Extracts and normalizes booking IDs.
+    Handles 'B-0001', 'B0001', 'b-1', 'b1', 'booking 1', 'booking-0001'.
+    Normalizes to standard format: e.g., 'B-0001'.
+    """
+    if not text:
+        return None
+    m = re.search(r"\b(?:B|BOOKING)[-_]?\s*(\d{1,4})\b", text, re.IGNORECASE)
+    if m:
+        num = m.group(1)
+        return f"B-{num.zfill(4)}"
+    return None
+
+
 def router_node(state: RideWiseState) -> Dict[str, Any]:
     """
     Classifies user intent and extracts entities (booking_id, vehicle_id, hub_name).
@@ -63,8 +93,8 @@ def router_node(state: RideWiseState) -> Dict[str, Any]:
         }
 
     # 2. Entity Extraction
-    booking_match = re.search(r"\b(B-\d{4})\b", last_user_msg, re.IGNORECASE)
-    extracted_booking = booking_match.group(1).upper() if booking_match else None
+    extracted_booking = extract_booking_id(last_user_msg)
+    extracted_customer = extract_customer_id(last_user_msg)
 
     vehicle_match = re.search(r"\b(VEH\d{3})\b", last_user_msg, re.IGNORECASE)
     extracted_vehicle = vehicle_match.group(1).upper() if vehicle_match else None
@@ -90,9 +120,9 @@ def router_node(state: RideWiseState) -> Dict[str, Any]:
         "delete", "delete account", "delete my account", "remove account", "close account"
     )
     has_specific_db_target = bool(
-        extracted_booking or extracted_vehicle or extracted_hub or
+        extracted_booking or extracted_customer or extracted_vehicle or extracted_hub or
         any(k in lower_msg for k in user_db_signals) or
-        (role == "support_agent" and any(k in lower_msg for k in ("fleet", "damage", "claim", "claims", "cust0")))
+        (role == "support_agent" and any(k in lower_msg for k in ("fleet", "damage", "claim", "claims", "cust0", "customer")))
     )
 
     policy_keywords = (
@@ -120,6 +150,7 @@ def router_node(state: RideWiseState) -> Dict[str, Any]:
     return {
         "intent": intent,
         "extracted_booking_id": extracted_booking,
+        "extracted_customer_id": extracted_customer,
         "extracted_vehicle_id": extracted_vehicle,
         "extracted_hub_name": extracted_hub
     }
@@ -141,18 +172,16 @@ def rbac_guard_node(state: RideWiseState) -> Dict[str, Any]:
 
     if role == "customer":
         # Check if customer is asking for another customer's ID explicitly
-        other_cust_match = re.search(r"\b(CUST\d{4})\b", last_user_msg, re.IGNORECASE)
-        if other_cust_match:
-            queried_id = other_cust_match.group(1).upper()
-            if queried_id != user_id.upper():
-                return {
-                    "final_response": (
-                        f"🔒 **Access Restricted**: You are authenticated as `{user_id}`. "
-                        f"In accordance with RideWise Privacy Policy, you cannot access or view data "
-                        f"belonging to another customer (`{queried_id}`)."
-                    ),
-                    "citations": ["Security: Customer Entitlement Boundary"]
-                }
+        queried_id = state.get("extracted_customer_id") or extract_customer_id(last_user_msg)
+        if queried_id and queried_id.upper() != user_id.upper():
+            return {
+                "final_response": (
+                    f"🔒 **Access Restricted**: You are authenticated as `{user_id}`. "
+                    f"In accordance with RideWise Privacy Policy, you cannot access or view data "
+                    f"belonging to another customer (`{queried_id}`)."
+                ),
+                "citations": ["Security: Customer Entitlement Boundary"]
+            }
 
         # Check if customer is asking for confidential company-wide operational financials
         restricted_phrases = [
@@ -182,6 +211,7 @@ def db_execution_node(state: RideWiseState) -> Dict[str, Any]:
     role = state.get("role", "customer")
     user_id = state.get("user_identifier", "")
     booking_id = state.get("extracted_booking_id")
+    customer_id_target = state.get("extracted_customer_id") or extract_customer_id(state.get("messages", [{}])[-1].get("content", ""))
     vehicle_id = state.get("extracted_vehicle_id")
     hub_name = state.get("extracted_hub_name")
     messages = state.get("messages", [])
@@ -244,13 +274,13 @@ def db_execution_node(state: RideWiseState) -> Dict[str, Any]:
         sql_context["open_damage_claims"] = claims[:10]
 
     # 7. Support Agent Customer Lookup (with strict PII masking)
-    cust_match = re.search(r"\b(CUST\d{4})\b", last_user_msg, re.IGNORECASE)
-    if role == "support_agent" and cust_match:
-        target_cust = cust_match.group(1).upper()
-        cust_info = get_customer_by_id(target_cust, mask_pii=True)
+    if role == "support_agent" and customer_id_target:
+        cust_info = get_customer_by_id(customer_id_target, mask_pii=True)
         if cust_info:
             sql_context["queried_customer"] = cust_info
-            sql_context["queried_customer_bookings"] = get_customer_bookings(target_cust, limit=5)
+            sql_context["queried_customer_bookings"] = get_customer_bookings(customer_id_target, limit=5)
+        else:
+            sql_context["customer_not_found"] = f"Customer `{customer_id_target}` was not found in the RideWise database."
 
     return {"sql_context": sql_context}
 
@@ -372,8 +402,13 @@ def synthesizer_node(state: RideWiseState) -> Dict[str, Any]:
         "10. CITATIONS & ARITHMETIC:\n"
         "   - ONLY cite documents and sections that directly support your answer. DO NOT spam or list irrelevant policy citations.\n"
         "   - Show explicit mathematical steps for any fee, penalty, or refund calculation.\n\n"
-        "11. MANDATORY PII PROTECTION FOR SUPPORT AGENTS:\n"
-        "   - When Active Role is SUPPORT_AGENT, customer phone numbers and emails MUST ALWAYS be partially masked in responses (e.g. Phone: 98450****5, Email: aa***@gmail.com).\n\n"
+        "11. MANDATORY PII PROTECTION & CUSTOMER PROFILE LOOKUPS FOR SUPPORT AGENTS:\n"
+        "   - When Active Role is SUPPORT_AGENT and 'queried_customer' is present in the DATABASE CONTEXT:\n"
+        "     • This is the exact customer matching the user query (e.g. 'CUST001' or 'cust1' normalizes to 'CUST0001'). Do NOT reject or say 'information not available' because of digit length; use the queried_customer data!\n"
+        "     • Present the customer's full profile clearly: Customer ID, Full Name, Tier, KYC Status, City, Member Since (created_at), Masked Phone, Masked Email, and Masked Driving License.\n"
+        "     • Present their recent bookings summary if available in 'queried_customer_bookings' (Booking ID, Vehicle, Scheduled Dates, Status).\n"
+        "     • Customer phone numbers, emails, and driving licenses MUST ALWAYS be partially masked as provided in the database context.\n"
+        "     • Cite [DB: customers.customer_id={customer_id}].\n\n"
         "12. STRICT GROUNDING & UNKNOWN INFORMATION / MISSING DOCUMENT PROTOCOL:\n"
         "   - You must NEVER extrapolate, invent, guess, or assume any information, feature, service, or policy rule that is not explicitly found in the DATABASE CONTEXT or RELEVANT POLICY DOCUMENTS.\n"
         "   - If a user asks a question, requests a service, or inquires about a topic for which NO document, record, or policy exists in your provided context:\n"
@@ -419,6 +454,10 @@ def synthesizer_node(state: RideWiseState) -> Dict[str, Any]:
         # Database citations: only include if the database entity was actively queried or discussed
         if sql_ctx.get("booking") and ("booking" in last_user_msg.lower() or sql_ctx["booking"]["booking_id"] in clean_resp or "B-" in clean_resp):
             final_citations.append(f"DB: bookings.booking_id={sql_ctx['booking']['booking_id']}")
+
+        if sql_ctx.get("queried_customer"):
+            target_cid = sql_ctx["queried_customer"].get("customer_id")
+            final_citations.append(f"DB: customers.customer_id={target_cid}")
 
         if sql_ctx.get("customer_profile") and any(k in last_user_msg.lower() for k in ("profile", "account", "tier", "who am i", "kyc", "my details", "name", "phone", "email")):
             cid = sql_ctx["customer_profile"].get("customer_id") or user_id
